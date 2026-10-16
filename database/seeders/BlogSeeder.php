@@ -10,92 +10,84 @@ class BlogSeeder extends Seeder
 {
     public function run(): void
     {
-        $author = User::query()->where('role', 'admin')->first();
+        $author = User::query()->where('role', User::ROLE_ADMIN)->first();
 
         $posts = [
             [
-                'title' => 'The twenty five post rule, and what actually counts as a post',
+                'title' => 'Assess content depth without chasing a post count',
                 'slug' => 'the-twenty-five-post-rule',
-                'excerpt' => 'Reviewers talk about 25 to 30 articles, but nobody tells you what stops counting as one. Here is the version that survives a review.',
-                'meta_title' => 'The twenty five post rule for AdSense, explained',
-                'meta_description' => 'What counts as a published post for a Google AdSense review, why thin pages do not count, and how to build a library that passes.',
-                'tags' => ['adsense', 'content'],
+                'excerpt' => 'There is no universal article-count target that guarantees a network decision. Focus on useful pages, clear purpose and evidence readers can verify.',
+                'meta_title' => 'Assess content depth without chasing a post count',
+                'meta_description' => 'A practical way to review content usefulness, crawl coverage and page purpose without treating arbitrary word or post counts as requirements.',
+                'tags' => ['publishing', 'content'],
                 'body' => <<<'HTML'
-<p>Every publisher hears the same number before they apply. Twenty five posts, sometimes thirty. It comes up in almost every forum thread about a first rejection, and it is repeated often enough that people treat it like a rule from a manual. It is not. It is a pattern, and understanding the pattern is worth more than the number.</p>
-<h2>Why the number exists at all</h2>
-<p>A reviewer opening a new account has no history to work with. They cannot see your traffic, they cannot see how long you have been writing, and they will not spend an hour reading your site. What they can do is open a few pages and ask a simple question: does this look like a real publication that a reader would come back to, or does it look like a site built to collect a payout?</p>
-<p>A site with nine posts and an obvious point of view can pass that test. A site with forty thin posts fails it. The number is a proxy for something real, which is volume, depth and the visible shape of a publishing habit. But the proxy breaks in both directions, and that is where publishers get hurt.</p>
-<h2>What stops counting</h2>
-<p>Three things remove a page from the effective count, and all three are common.</p>
-<h3>Tag and category archives</h3>
-<p>An archive page repeats the same excerpts you already have on the articles themselves. Google has indexed those articles. A reviewer who lands on an archive sees duplication, not volume. Keep archives out of the navigation and out of the internal links that your main pages use.</p>
-<h3>Short announcements</h3>
-<p>A post that says the site launched, or thanks a reader, or announces a redesign, has no information value. A handful of these is normal and harmless. Twenty of them is a pattern a reviewer will read as an empty site.</p>
-<h3>Anything behind a wall</h3>
-<p>If your best writing needs a login, it does not exist for a reviewer. Subscriber-only articles are fine on an established site with a real audience. On a first application they are invisible.</p>
-<h2>What actually counts</h2>
-<p>The reverse is worth stating clearly, because it is where publishers can build an advantage. A post counts when it answers a question somebody typed into a search engine, and it keeps answering it after the first paragraph.</p>
-<p>That means a piece of 1,200 words that walks through a decision step by step, with the tradeoffs and the failure cases, is worth more than three 400 word summaries of the same topic. The second kind is the classic reason for rejection. It looks like volume from the outside and it is padding from the inside.</p>
-<h2>What to do this month</h2>
-<p>Open your own site and count the pages you would defend to a stranger. If that number is under fifteen, publishing is the bottleneck and nothing else matters until it changes. If it is above fifteen, the problem is probably depth rather than count, and the report will tell you which pages are thin.</p>
-<p>Either way, the fix is the same: publish fewer, better pieces, and make sure every one of them has a named author, a clear purpose and something a reader would save.</p>
+<p>Publishers often ask how many articles a site needs before applying to an advertising network. A public-page audit cannot answer that question with a reliable number, and a fixed post count is not a substitute for current program requirements. The more useful question is whether the pages a reader can reach are clear, helpful and appropriate for their purpose.</p>
+<h2>Start with the reader's task</h2>
+<p>Choose a representative page and write down what a reader came to do. Does the page answer that question directly? Are important caveats, examples or sources missing? Is the next step clear? These checks are more useful than adding paragraphs to meet an arbitrary length.</p>
+<h2>Review the whole page type</h2>
+<p>Short pages are not automatically low quality. A contact page, glossary entry or tool can be concise and still do its job. Longer pages can also be repetitive or unhelpful. Review each page in context, including whether it repeats another page, serves a distinct purpose and is reachable through useful navigation.</p>
+<h2>Understand what a crawl can miss</h2>
+<p>A crawler samples pages based on the URLs it can discover and the limits of the audit. It may miss pages behind scripts, unusual navigation, access controls or non-standard sitemaps. Treat a detected page count as a snapshot, not a complete inventory.</p>
+<h2>A practical review</h2>
+<ol>
+<li>List the main page types on the site.</li>
+<li>Inspect representative pages for accuracy, usefulness, originality and clear sourcing.</li>
+<li>Check that important pages are reachable and that temporary, duplicate or empty pages are handled intentionally.</li>
+<li>Use analytics and search-console data separately to understand how people find and use the site.</li>
+<li>Confirm current requirements directly with each network before applying.</li>
+</ol>
+<p>Publishing more can make sense when you have useful, well-supported topics to cover. It is not a guarantee of approval, and length alone does not establish quality.</p>
 HTML,
             ],
             [
-                'title' => 'Why publishers get rejected for policy, not for thin content',
+                'title' => 'Review policy signals without assuming a violation',
                 'slug' => 'policy-rejections-explained',
-                'excerpt' => 'A rejection email never names the policy you broke. These are the four that account for most of them, and how to spot each one on your own site.',
-                'meta_title' => 'Why sites get rejected for AdSense policy, not thin content',
-                'meta_description' => 'The four policy failures behind most AdSense rejections, how to recognise them on your own site, and what a reviewer actually sees.',
-                'tags' => ['policy', 'adsense'],
+                'excerpt' => 'Automated site checks can flag patterns for review, but only the relevant network can interpret its current rules and account-specific decision.',
+                'meta_title' => 'Review advertising policy signals carefully',
+                'meta_description' => 'How to investigate policy-related website findings, validate evidence and check current requirements without treating a heuristic as a verdict.',
+                'tags' => ['policy', 'publishing'],
                 'body' => <<<'HTML'
-<p>When a site is rejected, the email is deliberately vague. It usually says the site does not meet the quality standards and invites you to apply again. Publishers read that as a judgement on their writing, and they spend the next month writing longer posts. That is often the wrong work.</p>
-<p>Plenty of rejected sites have plenty of content. They failed on policy, and policy is visible long before a human reviewer opens a page.</p>
-<h2>One: missing or hidden policy pages</h2>
-<p>This is the most common reason and the easiest to fix. Reviewers look for a contact page, an about page and a privacy policy. Not a privacy policy buried under a menu labelled resources. A page that a visitor can reach in one click from the home page or the footer.</p>
-<p>If your contact page is a mailto link, that is not always enough. A real page with a form or an address and a response time reads as a person running the site. If your privacy page is a 2019 template for a different company, fix that first. Reviewers notice the mismatch, and so do readers.</p>
-<h2>Two: the health and finance cluster</h2>
-<p>Google's policy is unusually detailed about content that claims to help people get rich quickly, about payday loans and about anything that reads like a get rich scheme. It also cares about misleading claims, exaggerated earnings screenshots and pages that exist only to send people to a review page.</p>
-<p>The rule of thumb is simple. If a page makes a promise about money that you cannot demonstrate, rewrite the promise. If a page exists to move a visitor to an affiliate link, make sure it also teaches them something.</p>
-<h2>Three: low value navigation and advertising clutter</h2>
-<p>Many sites pass the content bar and fail on the experience bar. A wall of ad slots between the header and the first paragraph, a mobile layout that pushes the text off the screen, a cookie banner that covers half the viewport, pop ups that appear on arrival. The reviewer sees a site that is built to extract value from a visitor, and that is the thing they are screening for.</p>
-<h2>Four: copyright and copied material</h2>
-<p>Scraped articles, rewritten Wikipedia, and text copied from other sites are all visible to a reviewer who reads two pages. So is a translation of someone else's article, even when the translation is technically good. And a site that republishes a large number of listings, reviews or prices without permission can fail the same test.</p>
-<h2>What to do about it</h2>
-<p>Run the audit and read the policy section rather than the content section first. It is the fastest way to find the thing that is actually costing you the application. Fix the blockers, then read the content findings. Most sites that clear the policy bar clear the content bar in the same month, because the policy problems are usually structural rather than editorial.</p>
+<p>A policy-related warning is a reason to inspect a page, not proof that a network will reject it. Automated tools can recognise visible patterns such as missing disclosures, unusual redirects or download links, but they may lack context and can produce false positives.</p>
+<h2>Check the source and the context</h2>
+<p>Open the exact URL named in a finding. Confirm that the page is live, that the reported element is present and that it is not a browser, cache or crawler artefact. A file extension, topic keyword or script reference is not enough to establish a policy violation.</p>
+<h2>Use current official guidance</h2>
+<p>Policies and program terms can change, and requirements can differ between products and account types. Read the current material from the network you intend to use. If a decision depends on your account, contact the network or its authorised representative rather than relying on a generic checklist.</p>
+<h2>Make commercial relationships clear</h2>
+<p>When a page contains affiliate links, sponsorships or another commercial relationship, review the disclosure rules that apply to your audience and jurisdiction. Make disclosures understandable and place them where readers can see them. Do not assume that a site-wide footer alone covers every context.</p>
+<h2>Keep a record of changes</h2>
+<p>Record the URL, what you observed, the source you checked and the change you made. This helps distinguish a genuine fix from a score fluctuation caused by crawl coverage, content changes or temporary server responses.</p>
+<p>A readiness report can help organise that review. It cannot provide a binding interpretation of policy or guarantee an application outcome.</p>
 HTML,
             ],
             [
-                'title' => 'E-E-A-T is not a score you can optimise, it is a habit you can build',
+                'title' => 'Trust signals: what a public crawl can and cannot tell you',
                 'slug' => 'eeat-is-a-habit',
-                'excerpt' => 'Google will not publish an E-E-A-T score. What it does publish is a set of patterns it uses to judge whether a site deserves to be trusted. You can build those patterns.',
-                'meta_title' => 'E-E-A-T explained for publishers who want to pass review',
-                'meta_description' => 'What E-E-A-T actually means for an AdSense review, which signals a reviewer can observe, and the practical habits that build them.',
-                'tags' => ['trust', 'strategy'],
+                'excerpt' => 'Publisher identity, authorship and transparent sourcing help readers judge a site. A public crawl can detect some signals, but it cannot verify expertise or experience.',
+                'meta_title' => 'Build clear trust signals for a publisher site',
+                'meta_description' => 'Practical ways to make authorship, sourcing, corrections and commercial disclosures clear without inventing experience or treating trust as a score.',
+                'tags' => ['trust', 'editorial'],
                 'body' => <<<'HTML'
-<p>E-E-A-T is the most quoted and least understood term in publishing. It stands for experience, expertise, authoritativeness and trust. Google has never published a score for it, so every explanation of it is a description of signals instead. That is good news, because signals can be built.</p>
-<h2>Experience</h2>
-<p>Experience shows up in the details. The person writing about pressure washing has pressure washed something and can tell you what the first hour felt like. The person writing about choosing a hosting provider can tell you what broke, not only what worked. A reviewer reads for the difference between a description and a report, and so does a reader.</p>
-<p>The practical version: if you have not done the thing, say so, and write about what you have done. Publishers who are careful about this end up with more credible sites, not weaker ones.</p>
-<h2>Expertise</h2>
-<p>Expertise is narrower than people think. It is not a qualification, it is a body of knowledge in a specific area. The signal is coverage. A site that has written a hundred careful posts about one narrow subject reads as expertise far more strongly than a site that covers everything shallowly.</p>
-<h2>Authoritativeness</h2>
-<p>This is the hardest one, and the most delayed. It comes from other people recognising the site: mentions, links, citations, a real presence in the field. Nothing you do on your own site creates it directly. What you can do is give it a surface to attach to, which means named authors with a real history, and a site that other people can link to with confidence.</p>
-<h2>Trust</h2>
-<p>Trust is the one reviewers test directly, and it is the most fixable. It comes from the things a reader would need in order to feel safe: a contact route that a person answers, a privacy policy that describes what actually happens, an about page that explains who is behind the site, transparent disclosure of anything commercial, and an editorial policy that says how articles are made.</p>
-<h2>The habit version</h2>
-<p>None of this is a single action. It is a set of habits: name the author on every post, keep the about and contact pages one click away, disclose anything that pays you, publish when you have something to say rather than to hit a quota, and correct what you get wrong in public.</p>
-<p>None of that is a trick, which is exactly why it works. The sites that pass review are not the ones that gamed the check. They are the ones that a person had built, and a reviewer can tell the difference in about a minute.</p>
+<p>Readers need to know who is responsible for a page, how its claims are supported and whether a commercial relationship affects the advice. Clear information helps readers make that assessment. It is not a shortcut to a ranking or an advertising decision.</p>
+<h2>Make authorship accurate</h2>
+<p>Name the people who actually wrote or reviewed a piece where that information helps the reader. A short biography should describe real, relevant experience and link to sources that support important credentials. Do not invent expertise, testing or personal use to make a page sound more authoritative.</p>
+<h2>Show how the publication works</h2>
+<p>An about page can explain the publication's scope and who runs it. An editorial or corrections page can describe how claims are checked and how errors are handled. Keep these pages specific to the organisation rather than copying a template that describes practices you do not follow.</p>
+<h2>Support important claims</h2>
+<p>Use reliable sources for factual claims, especially where information changes or could affect a reader's health, finances or safety. Link to the original source where appropriate, distinguish fact from opinion and date material when its timeliness matters.</p>
+<h2>Be transparent about relationships</h2>
+<p>Disclose affiliate links, sponsorships or other commercial interests in a way that is clear to readers. Make sure the disclosure accurately describes the relationship and appears in the context where it matters.</p>
+<h2>Know what automation cannot verify</h2>
+<p>A crawler may find an author name, a contact link or a privacy page. It cannot establish that a person has the stated expertise, that an email address is monitored, or that a policy is legally adequate. Review those details yourself and check any applicable current rules.</p>
 HTML,
             ],
         ];
 
-        foreach ($posts as $post) {
+        foreach ($posts as $index => $post) {
             BlogPost::updateOrCreate(
                 ['slug' => $post['slug']],
                 array_merge($post, [
                     'status' => 'published',
-                    'published_at' => now()->subDays(count($posts) - array_search($post, $posts, true)),
+                    'published_at' => now()->subDays(count($posts) - $index),
                     'author_id' => $author?->id,
                 ])
             );

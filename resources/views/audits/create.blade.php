@@ -61,7 +61,7 @@
                 ['Trust and E-E-A-T', 'Author identity, contact routes, about page, privacy terms.'],
                 ['SEO and indexing', 'Crawlability, robots rules, sitemap health, speed and structured data.'],
                 ['Technical and UX', 'Mobile layout, navigation depth, broken links and ad readiness.'],
-                ['Traffic quality', 'Engagement signals visible to the crawler and the health of the site.'],
+                ['Traffic quality', 'Not assessed from public pages; review analytics and traffic-source data separately.']
             ] as $item)
                 <li class="flex gap-3">
                     @include('partials.icons', ['name' => 'check', 'class' => 'w-4 h-4 shrink-0 mt-1'])

@@ -32,7 +32,7 @@ class StripeGateway extends AbstractGateway
             return PaymentIntent::failed('Stripe is not configured yet. Add the secret key in the admin panel.');
         }
 
-        $base = rtrim((string) $this->credential('base_url', 'https://api.stripe.com/v1'), '/');
+        $base = 'https://api.stripe.com/v1';
 
         try {
             $response = $this->client()
@@ -42,7 +42,7 @@ class StripeGateway extends AbstractGateway
                     'mode' => 'payment',
                     'client_reference_id' => (string) $invoice->id,
                     'customer_email' => $user->email,
-                    'success_url' => route('billing.callback', ['gateway' => $this->slug(), 'invoice' => $invoice->id]).'&session_id={CHECKOUT_SESSION_ID}',
+                    'success_url' => route('billing.callback', ['gateway' => $this->slug(), 'invoice' => $invoice->id]).'?session_id={CHECKOUT_SESSION_ID}',
                     'cancel_url' => route('billing.invoice', ['invoice' => $invoice->id]),
                     'metadata[invoice_id]' => (string) $invoice->id,
                     'metadata[user_id]' => (string) $user->id,
@@ -72,13 +72,15 @@ class StripeGateway extends AbstractGateway
 
     public function handleCallback(Request $request, Invoice $invoice): bool
     {
-        $sessionId = $request->query('session_id') ?: $request->input('session_id');
+        $sessionId = $request->query('session_id')
+            ?: $request->input('session_id')
+            ?: data_get($request->json()->all(), 'data.object.id');
 
-        if (blank($sessionId)) {
+        if (! is_string($sessionId) || ! preg_match('/^cs_(?:test|live)_[A-Za-z0-9]+$/D', $sessionId)) {
             return false;
         }
 
-        $base = rtrim((string) $this->credential('base_url', 'https://api.stripe.com/v1'), '/');
+        $base = 'https://api.stripe.com/v1';
 
         try {
             $response = $this->client()
@@ -94,11 +96,23 @@ class StripeGateway extends AbstractGateway
             return false;
         }
 
-        if ($response->json('payment_status') !== 'paid') {
+        $data = $response->json();
+        $expectedAmount = (int) round($this->amountFor($invoice) * 100);
+        $invoiceId = (string) $invoice->id;
+
+        if (data_get($data, 'id') !== $sessionId
+            || data_get($data, 'status') !== 'complete'
+            || data_get($data, 'mode') !== 'payment'
+            || data_get($data, 'payment_status') !== 'paid'
+            || (string) data_get($data, 'client_reference_id') !== $invoiceId
+            || (string) data_get($data, 'metadata.invoice_id') !== $invoiceId
+            || strtoupper((string) data_get($data, 'currency')) !== $this->currency()
+            || (int) data_get($data, 'amount_total', 0) !== $expectedAmount
+            || blank(data_get($data, 'payment_intent'))) {
             return false;
         }
 
-        return $this->markPaid($invoice, (string) $response->json('payment_intent'), $response->json());
+        return $this->markPaid($invoice, (string) data_get($data, 'payment_intent'), $data);
     }
 
     public function verifyWebhook(Request $request): ?bool

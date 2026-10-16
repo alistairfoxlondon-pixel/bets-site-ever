@@ -13,7 +13,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'stripe',
                 'name' => 'Stripe',
-                'description' => 'Cards in more than 135 countries.',
+                'description' => 'Cards and digital wallets through Stripe.',
                 'logo' => 'stripe.svg',
                 'currencies' => ['USD', 'BDT'],
                 'countries' => ['Worldwide'],
@@ -31,7 +31,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'bkash',
                 'name' => 'bKash',
-                'description' => 'The mobile wallet used across Bangladesh.',
+                'description' => 'Mobile wallet payments in Bangladesh.',
                 'logo' => 'bkash.svg',
                 'currencies' => ['BDT'],
                 'countries' => ['Bangladesh'],
@@ -40,7 +40,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'nagad',
                 'name' => 'Nagad',
-                'description' => 'Fast mobile payments in Bangladesh.',
+                'description' => 'Mobile wallet payments in Bangladesh.',
                 'logo' => 'nagad.svg',
                 'currencies' => ['BDT'],
                 'countries' => ['Bangladesh'],
@@ -57,9 +57,9 @@ class GatewaySeeder extends Seeder
             ],
             [
                 'slug' => 'aamarpay',
-                'name' => 'Rocket by AamarPay',
-                'description' => 'Rocket wallet and cards through AamarPay.',
-                'logo' => 'rocket.svg',
+                'name' => 'AamarPay',
+                'description' => 'Cards and mobile wallet payments in Bangladesh.',
+                'logo' => 'aamarpay.svg',
                 'currencies' => ['BDT'],
                 'countries' => ['Bangladesh'],
                 'sort_order' => 6,
@@ -67,7 +67,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'razorpay',
                 'name' => 'Razorpay',
-                'description' => 'Cards, net banking and wallets in India.',
+                'description' => 'Payment processing for eligible merchants in supported regions.',
                 'logo' => 'razorpay.svg',
                 'currencies' => ['USD', 'INR'],
                 'countries' => ['India'],
@@ -76,7 +76,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'paymob',
                 'name' => 'Paymob',
-                'description' => 'Cards and wallets in Egypt and the Gulf.',
+                'description' => 'Cards and wallets in supported markets.',
                 'logo' => 'paymob.svg',
                 'currencies' => ['USD', 'EGP'],
                 'countries' => ['Egypt', 'Saudi Arabia', 'United Arab Emirates'],
@@ -85,7 +85,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'cashfree',
                 'name' => 'Cashfree',
-                'description' => 'A single integration for cards, net banking and wallets in India.',
+                'description' => 'Payment processing for eligible merchants in supported regions.',
                 'logo' => 'cashfree.svg',
                 'currencies' => ['USD', 'INR'],
                 'countries' => ['India'],
@@ -94,7 +94,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'flutterwave',
                 'name' => 'Flutterwave',
-                'description' => 'Cards and mobile money across Africa.',
+                'description' => 'Cards and mobile money in supported markets.',
                 'logo' => 'flutterwave.svg',
                 'currencies' => ['USD', 'NGN', 'GHS', 'KES', 'ZAR'],
                 'countries' => ['Nigeria', 'Ghana', 'Kenya', 'South Africa'],
@@ -103,7 +103,7 @@ class GatewaySeeder extends Seeder
             [
                 'slug' => 'manual',
                 'name' => 'Bank transfer',
-                'description' => 'Transfer the amount and we confirm the order by hand.',
+                'description' => 'Transfer instructions configured by the site administrator.',
                 'logo' => 'bank.svg',
                 'currencies' => ['USD', 'BDT'],
                 'countries' => ['Worldwide'],
@@ -111,21 +111,28 @@ class GatewaySeeder extends Seeder
             ],
         ];
 
-        foreach ($gateways as $gateway) {
-            Gateway::updateOrCreate(
-                ['slug' => $gateway['slug']],
-                array_merge($gateway, [
-                    'is_enabled' => $gateway['slug'] === 'manual',
-                    'is_test_mode' => true,
-                    'credentials' => $gateway['slug'] === 'manual' ? [
-                        'account_name' => 'AdReady Limited',
-                        'account_number' => '0000000000',
-                        'bank_name' => 'Your bank',
-                        'instructions' => 'Transfer the invoice total and include the invoice number as the reference.',
-                    ] : [],
-                    'settings' => [],
-                ])
-            );
+        foreach ($gateways as $attributes) {
+            $gateway = Gateway::firstOrNew(['slug' => $attributes['slug']]);
+            $isNew = ! $gateway->exists;
+
+            if ($isNew) {
+                $gateway->fill($attributes);
+                $gateway->is_enabled = false;
+                $gateway->is_test_mode = true;
+                $gateway->credentials = [];
+                $gateway->settings = [];
+            }
+
+            // Clean up the previous placeholder bank details once, without ever
+            // overwriting credentials an administrator has since configured.
+            if ($gateway->slug === 'manual'
+                && ($gateway->credential('account_number') === '0000000000'
+                    || $gateway->credential('bank_name') === 'Your bank')) {
+                $gateway->is_enabled = false;
+                $gateway->credentials = [];
+            }
+
+            $gateway->save();
         }
     }
 }

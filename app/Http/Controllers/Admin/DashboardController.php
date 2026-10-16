@@ -52,7 +52,7 @@ class DashboardController extends Controller
 
         $topAudits = Audit::query()
             ->where('status', 'completed')
-            ->orderByDesc('probability')
+            ->orderByDesc('score')
             ->limit(5)
             ->get();
 

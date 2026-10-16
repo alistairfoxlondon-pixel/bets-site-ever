@@ -2,6 +2,15 @@
 
 return [
 
+    'bootstrap' => [
+        'admin_email' => env('ADREADY_BOOTSTRAP_ADMIN_EMAIL'),
+        'admin_name' => env('ADREADY_BOOTSTRAP_ADMIN_NAME', 'AdReady Administrator'),
+        'admin_password' => env('ADREADY_BOOTSTRAP_ADMIN_PASSWORD'),
+        'demo_email' => env('ADREADY_DEMO_EMAIL'),
+        'demo_name' => env('ADREADY_DEMO_NAME', 'Demo Publisher'),
+        'demo_password' => env('ADREADY_DEMO_PASSWORD'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Product modes
@@ -16,7 +25,7 @@ return [
     'modes' => [
         'normal' => [
             'label' => 'Normal',
-            'blurb' => 'Fast rules based pass over the site with a lightweight model.',
+            'blurb' => 'Quick review of a small public-page sample with a concise model review.',
             'model' => env('ADREADY_MODEL_NORMAL', 'kimi/kimi-k2-thinking'),
             'credits' => (int) env('ADREADY_CREDITS_NORMAL', 1),
             'max_pages' => 4,
@@ -27,7 +36,7 @@ return [
         ],
         'standard' => [
             'label' => 'Standard',
-            'blurb' => 'Full crawl with the complete policy rule set and a frontier model.',
+            'blurb' => 'Broader page sample with the complete deterministic rule set and model review.',
             'model' => env('ADREADY_MODEL_STANDARD', 'anthropic/claude-sonnet-4.5'),
             'credits' => (int) env('ADREADY_CREDITS_STANDARD', 3),
             'max_pages' => 10,
@@ -38,7 +47,7 @@ return [
         ],
         'premium' => [
             'label' => 'Premium',
-            'blurb' => 'Deepest analysis: every page type, every policy line, top tier model.',
+            'blurb' => 'Largest configured page sample and a more detailed model review; some URLs may still be missed.',
             'model' => env('ADREADY_MODEL_PREMIUM', 'anthropic/claude-opus-4.1'),
             'credits' => (int) env('ADREADY_CREDITS_PREMIUM', 6),
             'max_pages' => 25,
@@ -54,8 +63,8 @@ return [
     | Scoring
     |--------------------------------------------------------------------------
     |
-    | Category weights used to turn findings into a single readiness score.
-    | The weights mirror how heavily Google's reviewers weigh each area.
+    | Product-defined heuristic weights used to summarise observed findings.
+    | These are not Google's or any partner's review criteria.
     |
     */
 
@@ -66,7 +75,9 @@ return [
             'trust' => ['label' => 'Trust and E-E-A-T', 'weight' => 16],
             'seo' => ['label' => 'SEO and indexing', 'weight' => 14],
             'technical' => ['label' => 'Technical and UX', 'weight' => 12],
-            'traffic' => ['label' => 'Traffic quality', 'weight' => 12],
+            // A public crawl cannot inspect sessions, CTR, bots or referrals.
+            // Keep this area visible in the report, but exclude it from the score.
+            'traffic' => ['label' => 'Traffic quality', 'weight' => 0],
         ],
         'penalties' => [
             'critical' => 16,
@@ -74,9 +85,9 @@ return [
             'pass' => 0,
         ],
         'verdicts' => [
-            'apply_now' => ['min' => 78, 'label' => 'Apply now'],
-            'wait_and_improve' => ['min' => 55, 'label' => 'Wait and improve'],
-            'high_risk' => ['min' => 0, 'label' => 'High risk of rejection'],
+            'apply_now' => ['min' => 78, 'label' => 'Strong public signals'],
+            'wait_and_improve' => ['min' => 55, 'label' => 'Improvements recommended'],
+            'high_risk' => ['min' => 0, 'label' => 'Significant public gaps'],
         ],
     ],
 
@@ -90,51 +101,51 @@ return [
         'adsense' => [
             'label' => 'Google AdSense',
             'requirements' => [
-                'Original content worth advertising on',
-                'At least 25 to 30 published posts of real value',
-                'Clear navigation, contact, about and privacy pages',
-                'Enough original traffic to fill ads for advertisers',
-                'No policy restricted content, no copied material',
+                'Review original, useful content and site quality',
+                'No universal published post-count or word-count minimum',
+                'Clear navigation and transparent publisher information',
+                'Policy compliance and original rights to published material',
+                'Traffic quality and account history require publisher-side evidence',
             ],
         ],
         'adx' => [
             'label' => 'Google Ad Manager',
             'requirements' => [
-                'AdSense approved, or publisher requirement met',
-                'Direct sold inventory and 100 thousand monthly page views',
-                'Working ad tag or content management system',
-                'Consent management for EEA and UK traffic',
-                'No invalid traffic and no self served ad calls',
+                'Eligibility depends on account status and current Google terms',
+                'Inventory, demand and traffic are not visible in a public crawl',
+                'Consent and privacy requirements depend on audience and setup',
+                'Ad tags and serving behavior require a technical integration review',
+                'Confirm current access requirements with Google or your partner',
             ],
         ],
         'ezoic' => [
             'label' => 'Ezoic',
             'requirements' => [
-                'English content with clear value and originality',
-                'Minimum of five hundred monthly visitors',
-                'Blog, news or reference style publishing',
-                'Clean design, fast pages and working contact details',
-                'No prohibited content or scraped articles',
+                'Review current publisher terms directly before applying',
+                'Original content and a useful publishing experience',
+                'Traffic, account status and revenue cannot be inferred from pages',
+                'Clear navigation, publisher identity and working pages',
+                'Policy compliance and rights to published material',
             ],
         ],
         'mediavine' => [
             'label' => 'Mediavine',
             'requirements' => [
-                'Fifty thousand monthly sessions across all networks',
-                'Strong original content with a point of view',
-                'Professional layout, clear about page and real authors',
-                'Primarily English, informational or lifestyle content',
-                'No copied, spun or auto translated articles',
+                'Review current publisher program requirements directly',
+                'Original content with a clear editorial point of view',
+                'Traffic, revenue and audience geography need analytics evidence',
+                'Visible publisher identity and a professional site experience',
+                'Policy compliance and rights to published material',
             ],
         ],
         'raptive' => [
             'label' => 'Raptive',
             'requirements' => [
-                'At least twenty five thousand monthly page views',
-                'Original, useful content with clear author identity',
-                'Professional and fast website with contact details',
-                'Clean navigation, working links and real comments policy',
-                'No copyright or policy violations',
+                'Review current publisher program requirements directly',
+                'Original, useful content and a trustworthy publisher identity',
+                'Traffic, audience geography and account status are not crawlable',
+                'Clear navigation and working public pages',
+                'Policy compliance and rights to published material',
             ],
         ],
     ],
@@ -148,8 +159,10 @@ return [
     'crawler' => [
         'timeout' => 25,
         'connect_timeout' => 10,
-        'max_bytes' => 3145728,
-        'max_redirects' => 5,
+        'max_bytes' => 786432,
+        'max_total_bytes' => 8388608,
+        'max_crawl_seconds' => 90,
+        'max_redirects' => 4,
         'user_agent' => 'Mozilla/5.0 (compatible; AdReadyBot/1.0; +https://your-domain.com/bot)',
         'blocked_hosts' => [
             'localhost', '127.0.0.1', '0.0.0.0', '::1',

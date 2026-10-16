@@ -41,7 +41,7 @@
     <div class="table-wrap">
         <table class="table-app">
             <thead>
-                <tr><th>Site</th><th>User</th><th>Mode</th><th>Probability</th><th>Status</th><th>Duration</th><th>Date</th></tr>
+                <tr><th>Site</th><th>User</th><th>Mode</th><th>Readiness</th><th>Status</th><th>Duration</th><th>Date</th></tr>
             </thead>
             <tbody>
                 @foreach ($audits as $audit)
@@ -49,7 +49,7 @@
                         <td><a href="{{ route('admin.audits.show', $audit) }}" class="font-semibold">{{ $audit->domain }}</a></td>
                         <td class="text-sm muted">{{ $audit->user?->email }}</td>
                         <td class="text-sm muted">{{ ucfirst($audit->mode) }}</td>
-                        <td class="num">{{ $audit->probability !== null ? $audit->probability.'%' : '--' }}</td>
+                        <td class="num">{{ $audit->score !== null ? $audit->score.'/100' : '--' }}</td>
                         <td>
                             <span class="badge {{ $audit->status === 'completed' ? 'badge-pass' : ($audit->status === 'failed' ? 'badge-fail' : 'badge-info') }}">
                                 {{ ucfirst($audit->status) }}

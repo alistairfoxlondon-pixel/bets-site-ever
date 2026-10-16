@@ -40,9 +40,14 @@ class GatewayController extends Controller
             'countries' => ['nullable', 'string', 'max:240'],
             'sort_order' => ['required', 'integer', 'min:0', 'max:999'],
             'is_test_mode' => ['nullable', 'boolean'],
+            'credentials' => ['sometimes', 'array'],
+            'credentials.*' => ['nullable', 'string', 'max:2048'],
+            'clear_credentials' => ['sometimes', 'array'],
+            'clear_credentials.*' => ['nullable', 'boolean'],
         ]);
 
-        $credentials = $request->input('credentials', []);
+        $credentials = (array) ($data['credentials'] ?? []);
+        $clearCredentials = (array) ($data['clear_credentials'] ?? []);
 
         $gateway->fill([
             'name' => $data['name'],
@@ -54,23 +59,28 @@ class GatewayController extends Controller
             'is_test_mode' => $request->boolean('is_test_mode'),
         ]);
 
-        if (is_array($credentials)) {
-            $existing = $gateway->credentials ?? [];
+        $existing = $gateway->credentials ?? [];
+        $allowedKeys = array_keys($gateway->credentialFields());
 
-            foreach ($credentials as $key => $value) {
-                $key = (string) $key;
+        foreach ($credentials as $key => $value) {
+            $key = (string) $key;
 
-                if ($value === null || $value === '') {
-                    unset($existing[$key]);
-
-                    continue;
-                }
-
-                $existing[$key] = (string) $value;
+            if (! in_array($key, $allowedKeys, true) || $value === null || trim($value) === '') {
+                continue;
             }
 
-            $gateway->credentials = $existing;
+            $existing[$key] = trim($value);
         }
+
+        foreach ($clearCredentials as $key => $clear) {
+            $key = (string) $key;
+
+            if (in_array($key, $allowedKeys, true) && $request->boolean('clear_credentials.'.$key)) {
+                unset($existing[$key]);
+            }
+        }
+
+        $gateway->credentials = $existing;
 
         $gateway->save();
 
@@ -79,6 +89,10 @@ class GatewayController extends Controller
 
     public function toggle(Gateway $gateway): RedirectResponse
     {
+        if (in_array($gateway->slug, ['aamarpay', 'paymob'], true) && ! $gateway->is_enabled) {
+            return back()->with('error', $gateway->name.' is unavailable until its server-side payment verification is completed.');
+        }
+
         $gateway->update(['is_enabled' => ! $gateway->is_enabled]);
 
         return back()->with('status', $gateway->name.' is now '.($gateway->is_enabled ? 'enabled' : 'paused').'.');

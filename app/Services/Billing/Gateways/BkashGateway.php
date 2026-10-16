@@ -23,13 +23,16 @@ class BkashGateway extends AbstractGateway
 
     public function isConfigured(): bool
     {
-        return filled($this->credential('app_key')) && filled($this->credential('app_secret'));
+        return filled($this->credential('app_key'))
+            && filled($this->credential('app_secret'))
+            && filled($this->credential('username'))
+            && filled($this->credential('password'));
     }
 
     private function baseUrl(): string
     {
         return $this->isLive()
-            ? 'https://tokenized.sandbox.bka.sh/v1.2.0-beta'
+            ? 'https://tokenized.pay.bka.sh/v1.2.0-beta'
             : 'https://tokenized.sandbox.bka.sh/v1.2.0-beta';
     }
 
@@ -38,8 +41,9 @@ class BkashGateway extends AbstractGateway
         try {
             $response = $this->client()
                 ->withHeaders([
-                    'username' => (string) $this->credential('app_key'),
-                    'password' => (string) $this->credential('app_secret'),
+                    'username' => (string) $this->credential('username'),
+                    'password' => (string) $this->credential('password'),
+                    'X-APP-Key' => (string) $this->credential('app_key'),
                     'Accept' => 'application/json',
                 ])
                 ->post($this->baseUrl().'/tokenized/checkout/token/grant', [
@@ -81,7 +85,6 @@ class BkashGateway extends AbstractGateway
                     'amount' => $amount,
                     'currency' => $this->currency(),
                     'intent' => 'sale',
-                    'merchantInvoiceNumber' => (string) $invoice->id,
                     'merchantInvoiceNumber' => $invoice->number,
                 ]);
         } catch (\Throwable $exception) {
@@ -92,7 +95,7 @@ class BkashGateway extends AbstractGateway
 
         $bkashUrl = $response->json('bkashURL');
 
-        if (blank($bkashUrl)) {
+        if (! $response->successful() || blank($bkashUrl)) {
             return PaymentIntent::failed('bKash did not return a payment link.');
         }
 
@@ -130,11 +133,17 @@ class BkashGateway extends AbstractGateway
             return false;
         }
 
-        if (! $response->successful() || $response->json('status') !== 'Completed') {
+        $data = $response->json();
+
+        if (! $response->successful()
+            || data_get($data, 'status') !== 'Completed'
+            || (string) data_get($data, 'merchantInvoiceNumber', '') !== $invoice->number
+            || strtoupper((string) data_get($data, 'currency', '')) !== $this->currency()
+            || abs((float) data_get($data, 'amount', 0) - $this->amountFor($invoice)) >= 0.01) {
             return false;
         }
 
-        return $this->markPaid($invoice, (string) $paymentId, $response->json());
+        return $this->markPaid($invoice, (string) $paymentId, $data);
     }
 
     public function verifyWebhook(Request $request): ?bool

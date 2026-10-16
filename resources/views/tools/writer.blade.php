@@ -1,10 +1,10 @@
 
 @extends('layouts.marketing')
 
-@section('title', ($type === 'affiliate_article' ? 'Affiliate article writer' : 'AdSense content writer').' | '.config('app.name'))
+@section('title', ($type === 'affiliate_article' ? 'Affiliate article drafts' : 'Publisher content writer').' | '.config('app.name'))
 @section('description', $type === 'affiliate_article'
-    ? 'Write affiliate articles with a clear disclosure in the first paragraph, ten FAQs and export for WordPress, Blogger, Shopify and Wix.'
-    : 'Write long form AdSense ready articles with a title, meta description, FAQ block, internal links, external references and image prompts.')
+    ? 'Draft affiliate articles with a clear disclosure prompt, FAQs, publisher-supplied links and editable export formats.'
+    : 'Create publisher-focused informational article drafts with SEO metadata, FAQs, supplied links and image prompts for review.')
 
 @section('content')
 
@@ -16,14 +16,14 @@
     <div class="wrap">
         <div class="grid grid-2" style="gap:3rem;align-items:center;">
             <div>
-                <p class="eyebrow mb-3">{{ $isAffiliate ? 'Affiliate writer' : 'AdSense content writer' }}</p>
+                <p class="eyebrow mb-3">{{ $isAffiliate ? 'Affiliate article drafts' : 'Informational content drafts' }}</p>
                 <h1 class="mb-4">
-                    {{ $isAffiliate ? 'Articles that sell without reading like a sales page' : 'The articles your audit keeps asking for' }}
+                    {{ $isAffiliate ? 'Make affiliate recommendations clear and useful' : 'Draft useful articles from your publishing brief' }}
                 </h1>
                 <p class="lede">
-                    Give it a keyword. You get a finished article with the title, the meta
-                    description, the headings, the FAQ block, the links and the image prompts,
-                    ready to publish on WordPress, Blogger, Shopify or Wix.
+                    Start with a topic and publisher brief. The writer returns an editable draft with
+                    SEO metadata, FAQs, link placements and image prompts. Verify facts, links and
+                    disclosures before exporting or publishing.
                 </p>
 
                 <ul class="mt-6 space-y-2.5" style="font-size:.95rem;">
@@ -88,11 +88,11 @@
         <div class="card" style="padding:1.5rem 1.7rem;">
             <ol class="space-y-4" style="font-size:.96rem;">
                 @foreach ([
-                    ['Write like a person who used the thing', 'The article explains what something feels like in practice, not what a brochure says about it.'],
-                    ['Never invent a number', 'If a figure is needed and we do not have a verified one, the article explains the mechanism instead of making a statistic up.'],
-                    ['No dashes, no hashtags, no filler', 'The house style bans the punctuation and the empty openings that make content read as machine written.'],
-                    ['Say what is current', 'Anything that changes over time is described in its current state, and the date is known to the writer.'],
-                    ['E-E-A-T is visible', 'The structure, the specific experience and the honest tradeoffs are what a reviewer is looking for.'],
+                    ['Use supplied experience only', 'First-hand observations are included only when the publisher provides them; otherwise the draft sticks to general, supportable information.'],
+                    ['Never invent a fact or citation', 'Unverified details are qualified or flagged for the publisher to check rather than filled in with a guess.'],
+                    ['Keep the prose useful', 'Avoid filler, empty openings and awkward keyword repetition; choose a clear structure that suits the topic.'],
+                    ['Flag time-sensitive claims', 'Facts that may change are marked for source verification before publication.'],
+                    ['Make sources clear', 'Help readers assess claims with supplied references, transparent authorship and honest trade-offs; do not fabricate expertise.'],
                 ] as $index => $rule)
                     <li class="flex gap-4">
                         <span class="step-number shrink-0">{{ $index + 1 }}</span>

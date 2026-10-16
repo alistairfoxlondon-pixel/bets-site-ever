@@ -97,10 +97,12 @@ class Audit extends Model
         $out = [];
 
         foreach (config('adready.score.categories') as $key => $meta) {
+            $storedScore = data_get($this->meta, "category_scores.$key", $meta['weight'] > 0 ? 100 : null);
+
             $out[$key] = [
                 'label' => $meta['label'],
                 'weight' => $meta['weight'],
-                'score' => (float) (data_get($this->meta, "category_scores.$key", 100)),
+                'score' => $storedScore === null ? null : (float) $storedScore,
                 'findings' => $this->findings->where('category', $key)->count(),
             ];
         }

@@ -18,7 +18,8 @@
             <div class="flex justify-between"><dt class="muted">User</dt><dd>{{ $audit->user?->email }}</dd></div>
             <div class="flex justify-between"><dt class="muted">Mode</dt><dd>{{ ucfirst($audit->mode) }}</dd></div>
             <div class="flex justify-between"><dt class="muted">Status</dt><dd>{{ ucfirst($audit->status) }}</dd></div>
-            <div class="flex justify-between"><dt class="muted">Probability</dt><dd class="mono">{{ $audit->probability ?? '--' }}%</dd></div>
+            <div class="flex justify-between"><dt class="muted">Public-site readiness index</dt><dd class="mono">{{ $audit->score ?? '--' }}/100</dd></div>
+            <p class="hint">Internal heuristic from sampled public pages; not an approval prediction.</p>
             <div class="flex justify-between"><dt class="muted">Score</dt><dd class="mono">{{ $audit->score ?? '--' }}</dd></div>
             <div class="flex justify-between"><dt class="muted">Pages crawled</dt><dd class="mono">{{ $audit->pages_crawled }}</dd></div>
             <div class="flex justify-between"><dt class="muted">Findings</dt><dd class="mono">{{ $audit->findings_count }}</dd></div>
@@ -39,9 +40,11 @@
                 <div>
                     <div class="flex items-center justify-between text-sm mb-1">
                         <span>{{ $category['label'] }}</span>
-                        <span class="mono muted">{{ (int) round($category['score']) }}</span>
+                        <span class="mono muted">{{ $category['score'] === null ? 'Not assessed' : (int) round($category['score']) }}</span>
                     </div>
-                    <div class="meter"><span style="width:{{ max(2, min(100, (int) round($category['score']))) }}%;"></span></div>
+                    @if ($category['score'] !== null)
+                        <div class="meter"><span style="width:{{ max(2, min(100, (int) round($category['score']))) }}%;"></span></div>
+                    @endif
                 </div>
             @endforeach
         </div>

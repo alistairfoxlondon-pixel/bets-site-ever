@@ -37,11 +37,11 @@ class PayPalGateway extends AbstractGateway
     {
         try {
             $response = $this->client()
+                ->withBasicAuth((string) $this->credential('client_id'), (string) $this->credential('client_secret'))
                 ->asForm()
                 ->post($this->baseUrl().'/v1/oauth2/token', [
                     'grant_type' => 'client_credentials',
-                ])
-                ->withBasicAuth((string) $this->credential('client_id'), (string) $this->credential('client_secret'));
+                ]);
         } catch (\Throwable $exception) {
             $this->logError('token', $exception);
 
@@ -90,6 +90,12 @@ class PayPalGateway extends AbstractGateway
             return PaymentIntent::failed('PayPal could not be reached. Please try again.');
         }
 
+        if (! $response->successful()) {
+            $this->logError('create', new \RuntimeException('PayPal returned HTTP '.$response->status()));
+
+            return PaymentIntent::failed('PayPal rejected the checkout request. Please check the gateway configuration.');
+        }
+
         $approve = collect($response->json('links') ?? [])->firstWhere('rel', 'approve')['href'] ?? null;
 
         if (blank($approve)) {
@@ -127,15 +133,31 @@ class PayPalGateway extends AbstractGateway
             return false;
         }
 
-        $status = $response->json('status');
+        $data = $response->json();
+        $status = data_get($data, 'status');
+        $purchaseUnit = data_get($data, 'purchase_units.0', []);
+        $capture = data_get($purchaseUnit, 'payments.captures.0', []);
+        $captureAmount = (float) data_get($capture, 'amount.value', 0);
+        $captureCurrency = strtoupper((string) data_get($capture, 'amount.currency_code', ''));
+        $referenceId = (string) data_get($purchaseUnit, 'reference_id', '');
+        $customId = (string) data_get($purchaseUnit, 'custom_id', '');
+        $expectedAmount = $this->amountFor($invoice);
 
-        if (! in_array($status, ['COMPLETED', 'APPROVED'], true)) {
+        if ($status !== 'COMPLETED'
+            || data_get($capture, 'status') !== 'COMPLETED'
+            || ($referenceId !== (string) $invoice->id && $customId !== (string) $invoice->id)
+            || $captureCurrency !== $this->currency()
+            || abs($captureAmount - $expectedAmount) >= 0.01) {
             return false;
         }
 
-        $captureId = collect($response->json('purchase_units.0.payments.captures') ?? [])->first()['id'] ?? $token;
+        $captureId = data_get($capture, 'id');
 
-        return $this->markPaid($invoice, (string) $captureId, $response->json());
+        if (blank($captureId)) {
+            return false;
+        }
+
+        return $this->markPaid($invoice, (string) $captureId, $data);
     }
 
     public function verifyWebhook(Request $request): ?bool

@@ -68,11 +68,26 @@ class SslCommerzGateway extends AbstractGateway
 
         $url = $response->json('GatewayPageURL');
 
-        if (blank($url)) {
+        if (! $response->successful() || ! $this->isProviderCheckoutUrl($url)) {
             return PaymentIntent::failed('SSLCommerz did not return a checkout link.');
         }
 
         return PaymentIntent::redirect($url, $invoice->number);
+    }
+
+    private function isProviderCheckoutUrl(mixed $url): bool
+    {
+        if (! is_string($url) || strlen($url) > 2048) {
+            return false;
+        }
+
+        $parts = parse_url($url);
+
+        return is_array($parts)
+            && strtolower((string) ($parts['scheme'] ?? '')) === 'https'
+            && in_array(strtolower((string) ($parts['host'] ?? '')), ['sandbox.sslcommerz.com', 'securepay.sslcommerz.com'], true)
+            && ! isset($parts['user'])
+            && ! isset($parts['pass']);
     }
 
     public function handleCallback(Request $request, Invoice $invoice): bool
@@ -98,11 +113,23 @@ class SslCommerzGateway extends AbstractGateway
             return false;
         }
 
-        if (! $response->successful() || $response->json('status') !== 'VALID') {
+        $data = $response->json();
+        $status = strtoupper((string) data_get($data, 'status'));
+        $amount = (float) data_get($data, 'amount', 0);
+        $currency = strtoupper((string) data_get($data, 'currency', ''));
+        $transactionId = (string) data_get($data, 'bank_tran_id', '');
+
+        if (! $response->successful()
+            || ! in_array($status, ['VALID', 'VALIDATED'], true)
+            || (string) data_get($data, 'tran_id', '') !== $invoice->number
+            || (string) data_get($data, 'value1', '') !== (string) $invoice->id
+            || $currency !== $this->currency()
+            || abs($amount - $this->amountFor($invoice)) >= 0.01
+            || blank($transactionId)) {
             return false;
         }
 
-        return $this->markPaid($invoice, (string) $response->json('bank_tran_id'), $response->json());
+        return $this->markPaid($invoice, $transactionId, $data);
     }
 
     public function verifyWebhook(Request $request): ?bool

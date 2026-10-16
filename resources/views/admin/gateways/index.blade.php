@@ -15,7 +15,9 @@
                 <img src="{{ $gateway->logoUrl() }}" alt="{{ $gateway->name }}" height="24"
                      onerror="this.style.display='none'">
                 <h2 class="text-lg">{{ $gateway->name }}</h2>
-                @if (! $row['supported'])
+                @if (in_array($gateway->slug, ['aamarpay', 'paymob'], true))
+                    <span class="badge badge-warn">Checkout unavailable pending verification</span>
+                @elseif (! $row['supported'])
                     <span class="badge badge-warn">Driver not installed</span>
                 @elseif (! $row['configured'])
                     <span class="badge badge-warn">Missing credentials</span>
@@ -24,15 +26,23 @@
                 @endif
             </div>
 
-            <form method="POST" action="{{ route('admin.gateways.toggle', $gateway) }}">
-                @csrf
-                <button class="btn btn-sm {{ $gateway->is_enabled ? 'btn-ghost' : 'btn-primary' }}" type="submit">
-                    {{ $gateway->is_enabled ? 'Pause' : 'Enable' }}
-                </button>
-            </form>
+            @if (in_array($gateway->slug, ['aamarpay', 'paymob'], true) && ! $gateway->is_enabled)
+                <span class="btn btn-ghost btn-sm" aria-disabled="true">Unavailable</span>
+            @else
+                <form method="POST" action="{{ route('admin.gateways.toggle', $gateway) }}">
+                    @csrf
+                    <button class="btn btn-sm {{ $gateway->is_enabled ? 'btn-ghost' : 'btn-primary' }}" type="submit">
+                        {{ $gateway->is_enabled ? 'Pause' : 'Enable' }}
+                    </button>
+                </form>
+            @endif
         </div>
 
-        <p class="muted text-sm mb-4">{{ $gateway->description }}</p>
+        @if (in_array($gateway->slug, ['aamarpay', 'paymob'], true))
+            <p class="muted text-sm mb-4">Checkout is disabled until the provider's documented server-side payment-verification flow is implemented and tested. Credentials may be stored, but this method cannot accept payments.</p>
+        @else
+            <p class="muted text-sm mb-4">{{ $gateway->description }}</p>
+        @endif
 
         <form method="POST" action="{{ route('admin.gateways.update', $gateway) }}" class="space-y-4">
             @csrf
@@ -70,7 +80,11 @@
                     @foreach ($gateway->credentialFields() as $field => $placeholder)
                         <div>
                             <label class="label">{{ $field }}</label>
-                            <input class="field" name="credentials[{{ $field }}]" type="text" value="" placeholder="{{ $placeholder }}">
+                            <input class="field" name="credentials[{{ $field }}]" type="text" value="" placeholder="{{ $placeholder }}" autocomplete="off">
+                            <label class="hint mt-1 flex items-center gap-2">
+                                <input type="checkbox" name="clear_credentials[{{ $field }}]" value="1">
+                                Clear this stored value
+                            </label>
                         </div>
                     @endforeach
                 </div>

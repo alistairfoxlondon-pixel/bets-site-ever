@@ -25,7 +25,7 @@ class SettingController extends Controller
         'ai.model_premium' => ['label' => 'Model for the Premium audit', 'type' => 'text', 'group' => 'ai'],
         'ai.model_writer_standard' => ['label' => 'Model for the Standard writer', 'type' => 'text', 'group' => 'ai'],
         'ai.model_writer_premium' => ['label' => 'Model for the Premium writer', 'type' => 'text', 'group' => 'ai'],
-        'indexing.google_service_account' => ['label' => 'Google Indexing API service account JSON', 'type' => 'textarea', 'group' => 'indexing'],
+        'indexing.google_service_account' => ['label' => 'Google Indexing API service account JSON', 'type' => 'secret_textarea', 'group' => 'indexing'],
         'indexing.indexnow_key' => ['label' => 'IndexNow API key', 'type' => 'secret', 'group' => 'indexing'],
         'indexing.indexnow_key_location' => ['label' => 'IndexNow key file URL', 'type' => 'text', 'group' => 'indexing'],
         'currency.primary' => ['label' => 'Primary currency', 'type' => 'text', 'group' => 'currency'],
@@ -74,7 +74,7 @@ class SettingController extends Controller
                 continue;
             }
 
-            if (self::EDITABLE[$key]['type'] === 'secret' && $value === '') {
+            if (in_array(self::EDITABLE[$key]['type'], ['secret', 'secret_textarea'], true) && $value === '') {
                 continue;
             }
 
@@ -91,12 +91,18 @@ class SettingController extends Controller
     public function updateSecret(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'key' => ['required', 'string', 'max:120'],
+            'key' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9._-]+$/'],
             'value' => ['nullable', 'string', 'max:20000'],
         ]);
 
-        Setting::put($data['key'], $data['value']);
+        if (! Setting::isSensitiveKey($data['key'])) {
+            return back()->with('error', 'Raw values can only be stored under a key that identifies a secret, token, password or private key.');
+        }
 
-        return back()->with('status', 'Stored.');
+        if (filled($data['value'] ?? null)) {
+            Setting::put($data['key'], $data['value']);
+        }
+
+        return back()->with('status', filled($data['value'] ?? null) ? 'Secret stored securely.' : 'No change was made.');
     }
 }

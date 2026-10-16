@@ -22,7 +22,9 @@ class AamarPayGateway extends AbstractGateway
 
     public function isConfigured(): bool
     {
-        return filled($this->credential('store_id')) && filled($this->credential('store_password'));
+        // Do not expose this gateway for checkout until its transaction-verification
+        // endpoint and callback signature are implemented against confirmed provider docs.
+        return false;
     }
 
     private function baseUrl(): string
@@ -76,23 +78,9 @@ class AamarPayGateway extends AbstractGateway
 
     public function handleCallback(Request $request, Invoice $invoice): bool
     {
-        $status = $request->input('status') ?: $request->query('status');
-
-        if ($status !== 'success') {
-            return false;
-        }
-
-        $tranId = $request->input('tran_id') ?: $request->query('tran_id');
-        $hash = $request->input('hash') ?: $request->query('hash');
-        $amount = (float) ($request->input('amount') ?: $request->query('amount'));
-
-        $expected = hash_hmac('sha256', $tranId.$amount.$this->credential('store_password'), (string) $this->credential('store_id'));
-
-        if (blank($hash) || ! hash_equals($expected, (string) $hash)) {
-            return false;
-        }
-
-        return $this->markPaid($invoice, (string) $tranId, $request->all());
+        // Browser-return data is not payment proof. The gateway remains unavailable
+        // until a documented server-side transaction validation flow is added.
+        return false;
     }
 
     public function verifyWebhook(Request $request): ?bool

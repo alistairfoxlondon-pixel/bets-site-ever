@@ -32,18 +32,24 @@
         <a href="{{ route('audits.show', $audit) }}" class="btn btn-ghost btn-sm">Refresh</a>
     </div>
 @else
+    @if (data_get($audit->meta, 'sample_data'))
+        <div class="panel mb-4" role="note">
+            <strong>Demonstration report.</strong> This seeded example uses illustrative data and does not represent a real site audit.
+        </div>
+    @endif
+
     <div class="grid grid-2" style="gap:1.25rem;align-items:start;">
         <div class="panel">
             <div class="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <p class="label">Approval probability</p>
+                    <p class="label">Public-site readiness index</p>
                     <p class="display" style="font-size:3.2rem;line-height:1;color:var(--color-brand);">
-                        {{ $audit->probability }}<span class="muted" style="font-size:1.4rem;">%</span>
+                        {{ $audit->score }}<span class="muted" style="font-size:1.4rem;">/100</span>
                     </p>
-                    <p class="muted text-sm mt-1">Readiness score {{ $audit->score }} out of 100</p>
+                    <p class="muted text-sm mt-1">Heuristic based on sampled public pages, not an approval prediction.</p>
                 </div>
                 <div class="text-right">
-                    <span class="badge {{ $audit->probability >= 78 ? 'badge-pass' : ($audit->probability >= 55 ? 'badge-warn' : 'badge-fail') }}">{{ $audit->verdictLabel() }}</span>
+                    <span class="badge {{ $audit->score >= 78 ? 'badge-pass' : ($audit->score >= 55 ? 'badge-warn' : 'badge-fail') }}">{{ $audit->verdictLabel() }}</span>
                     <p class="faint text-xs mt-2">
                         {{ ucfirst($audit->mode) }} audit<br>
                         {{ $audit->pages_crawled }} pages &middot; {{ $audit->findings_count }} findings
@@ -52,7 +58,7 @@
             </div>
 
             <div class="meter mt-4" style="height:9px;">
-                <span style="width:{{ max(2, min(100, (int) $audit->probability)) }}%;"></span>
+                <span style="width:{{ max(2, min(100, (int) $audit->score)) }}%;"></span>
             </div>
 
             @if ($summary)
@@ -77,11 +83,13 @@
                     <div>
                         <div class="flex items-center justify-between text-sm mb-1">
                             <span>{{ $category['label'] }}</span>
-                            <span class="mono muted">{{ (int) round($category['score']) }}</span>
+                            <span class="mono muted">{{ $category['score'] === null ? 'Not assessed' : (int) round($category['score']) }}</span>
                         </div>
-                        <div class="meter">
-                            <span style="width:{{ max(2, min(100, (int) round($category['score']))) }}%;"></span>
-                        </div>
+                        @if ($category['score'] !== null)
+                            <div class="meter">
+                                <span style="width:{{ max(2, min(100, (int) round($category['score']))) }}%;"></span>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -90,7 +98,8 @@
 
     <div class="panel mt-4">
         <div class="panel-head">
-            <h2 class="text-lg">Network readiness</h2>
+            <h2 class="text-lg">Network-specific public signals</h2>
+            <p class="muted text-sm mt-1">These product heuristics inspect only sampled pages. They do not confirm traffic, account status, eligibility, or current partner requirements.</p>
         </div>
 
         <div class="grid grid-2" style="gap:.9rem;">
@@ -100,7 +109,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <img src="/brand/{{ $key }}.svg" alt="{{ $network['label'] }}" height="20" style="height:20px;width:auto;max-width:140px;">
                         <span class="badge {{ ($entry['ready'] ?? false) ? 'badge-pass' : 'badge-warn' }}">
-                            {{ ($entry['ready'] ?? false) ? 'Ready' : 'Not ready' }}
+                            {{ ($entry['ready'] ?? false) ? 'No sampled gaps' : 'Review suggested' }}
                         </span>
                     </div>
                     <div class="meter mt-3">
@@ -121,8 +130,8 @@
     @if ($critical->isNotEmpty())
         <div class="panel mt-4">
             <div class="panel-head">
-                <h2 class="text-lg">Blockers to fix first</h2>
-                <span class="badge badge-fail">{{ $critical->count() }} blocking</span>
+                <h2 class="text-lg">Highest-priority findings</h2>
+                <span class="badge badge-fail">{{ $critical->count() }} flagged</span>
             </div>
             <div class="space-y-3">
                 @foreach ($critical as $finding)
@@ -253,7 +262,7 @@
             @endif
             @if ($criticalFixes)
                 <div class="panel">
-                    <h3 class="text-lg mb-2">Critical fix list</h3>
+                    <h3 class="text-lg mb-2">Priority fixes from model review</h3>
                     <ul class="space-y-2" style="font-size:.92rem;">
                         @foreach ($criticalFixes as $fix)
                             <li class="flex gap-2">

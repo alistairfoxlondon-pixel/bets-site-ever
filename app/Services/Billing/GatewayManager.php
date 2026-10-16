@@ -72,6 +72,8 @@ class GatewayManager
     {
         return $this->enabled()->filter(function (Gateway $gateway) {
             return $this->driver($gateway)?->isConfigured() ?? false;
+        })->filter(function (Gateway $gateway) {
+            return $gateway->checkoutCurrency() !== null;
         })->values();
     }
 

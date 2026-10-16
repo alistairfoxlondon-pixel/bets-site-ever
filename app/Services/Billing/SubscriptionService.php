@@ -33,8 +33,7 @@ class SubscriptionService
             }
 
             $net = max(0, $amount - $discount);
-
-            $this->closeOtherSubscriptions($user);
+            $amountBdt = strtoupper($currency) === 'BDT' ? $net : Currency::toBdt($net);
 
             $subscription = Subscription::create([
                 'user_id' => $user->id,
@@ -43,7 +42,7 @@ class SubscriptionService
                 'billing_cycle' => $cycle,
                 'amount' => $net,
                 'currency' => $currency,
-                'amount_bdt' => Currency::toBdt($net),
+                'amount_bdt' => $amountBdt,
                 'starts_at' => now(),
                 'meta' => ['coupon' => $couponCode, 'discount' => $discount],
             ]);
@@ -55,7 +54,7 @@ class SubscriptionService
                 'description' => $plan->name.' plan ('.ucfirst($cycle).' subscription)',
                 'amount' => $net,
                 'currency' => $currency,
-                'amount_bdt' => Currency::toBdt($net),
+                'amount_bdt' => $amountBdt,
                 'status' => 'pending',
                 'period_start' => now(),
                 'period_end' => $cycle === 'yearly' ? now()->addYear() : now()->addMonth(),
@@ -82,6 +81,18 @@ class SubscriptionService
                 return true;
             }
 
+            if (! in_array($invoice->status, ['pending', 'awaiting_review'], true)) {
+                return false;
+            }
+
+            $subscription = $invoice->subscription_id
+                ? Subscription::query()->lockForUpdate()->find($invoice->subscription_id)
+                : null;
+
+            if ($invoice->subscription_id && (! $subscription || $subscription->status !== 'pending')) {
+                return false;
+            }
+
             $invoice->update([
                 'status' => 'paid',
                 'paid_at' => now(),
@@ -100,10 +111,8 @@ class SubscriptionService
                 'paid_at' => now(),
             ]);
 
-            $subscription = $invoice->subscription;
-
             if ($subscription) {
-                $this->activateSubscription($subscription, $invoice);
+                $this->activateSubscription($subscription, $invoice, $gateway);
             }
 
             $this->recordReferralCommission($invoice);
@@ -112,8 +121,14 @@ class SubscriptionService
         });
     }
 
-    public function activateSubscription(Subscription $subscription, ?Invoice $invoice = null): void
+    public function activateSubscription(Subscription $subscription, ?Invoice $invoice = null, ?string $gateway = null): void
     {
+        $user = $subscription->user;
+
+        if ($user) {
+            $this->closeOtherSubscriptions($user, $subscription->id);
+        }
+
         $plan = $subscription->plan;
         $cycle = $subscription->billing_cycle === 'yearly' ? 'yearly' : 'monthly';
 
@@ -124,12 +139,10 @@ class SubscriptionService
             'trial_ends_at' => $trialEndsAt,
             'starts_at' => $subscription->starts_at ?: now(),
             'renews_at' => now()->add($cycle === 'yearly' ? 'year' : 'month'),
-            'gateway' => $subscription->gateway,
+            'gateway' => $gateway ?? $subscription->gateway,
         ]);
 
         if ($plan && $plan->credits > 0) {
-            $user = $subscription->user;
-
             if ($user) {
                 $user->grantCredits(
                     $plan->credits,

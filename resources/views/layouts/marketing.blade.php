@@ -5,7 +5,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', config('app.name'))</title>
-    <meta name="description" content="@yield('description', 'AdReady audits your site for Google AdSense and every major ad network approval, then gives you a realistic approval probability, a ranked fix list and a professional PDF report.')">
+    <meta name="description" content="@yield('description', 'Review public publisher-site signals for major ad networks with evidence-linked findings, prioritised improvements and a professional PDF report.')">
     <link rel="icon" href="/brand/adready.svg" type="image/svg+xml">
     @include('partials.critical')
     @include('partials.assets')
@@ -68,13 +68,13 @@
         <div class="grid grid-4" style="gap:2rem;">
             <div>
                 <img src="/brand/adready-word.svg" alt="{{ config('app.name') }}" width="150" height="32" class="mb-3">
-                <p class="muted" style="font-size:.9rem;">Know your approval odds before you apply.</p>
+                <p class="muted" style="font-size:.9rem;">Public evidence. Practical next steps.</p>
                 <p class="faint mono" style="font-size:.78rem;">Audits for AdSense, AdX, Ezoic, Mediavine and Raptive.</p>
             </div>
             <div>
                 <h4>Tools</h4>
                 <ul class="space-y-1.5">
-                    <li><a href="{{ route('audit.landing') }}">Approval auditor</a></li>
+                    <li><a href="{{ route('audit.landing') }}">Publisher-site auditor</a></li>
                     <li><a href="{{ route('writer.landing') }}">AdSense writer</a></li>
                     <li><a href="{{ route('writer.affiliate') }}">Affiliate writer</a></li>
                     <li><a href="{{ route('indexing.landing') }}">Quick indexing</a></li>

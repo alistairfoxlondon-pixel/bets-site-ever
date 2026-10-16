@@ -13,6 +13,20 @@ use Illuminate\Support\Str;
  */
 class HtmlDocument
 {
+    private const MAX_META_TAGS = 500;
+
+    private const MAX_HEADINGS = 500;
+
+    private const MAX_IMAGES = 1500;
+
+    private const MAX_LINKS = 2000;
+
+    private const MAX_SCRIPTS = 250;
+
+    private const MAX_JSON_LD_BLOCKS = 50;
+
+    private const MAX_COUNTED_TAGS = 10000;
+
     /** @var array<string,string> */
     public array $meta = [];
 
@@ -162,11 +176,8 @@ class HtmlDocument
 
     private function parseMeta(string $html): void
     {
-        if (! preg_match_all('/<meta\b[^>]*>/i', $html, $matches)) {
-            return;
-        }
-
-        foreach ($matches[0] as $tag) {
+        foreach ($this->boundedMatches('/<meta\b[^>]*>/i', $html, self::MAX_META_TAGS) as $match) {
+            $tag = $match[0];
             $name = $this->attribute($tag, 'name') ?? $this->attribute($tag, 'property') ?? $this->attribute($tag, 'itemprop');
             $content = $this->attribute($tag, 'content');
 
@@ -180,11 +191,7 @@ class HtmlDocument
 
     private function parseHeadings(string $html): void
     {
-        if (! preg_match_all('/<h([1-6])\b[^>]*>(.*?)<\/h\1>/is', $html, $matches, PREG_SET_ORDER)) {
-            return;
-        }
-
-        foreach ($matches as $match) {
+        foreach ($this->boundedMatches('/<h([1-6])\b[^>]*>(.*?)<\/h\1>/is', $html, self::MAX_HEADINGS) as $match) {
             $text = $this->cleanText($match[2]);
 
             if ($text === '') {
@@ -200,11 +207,8 @@ class HtmlDocument
 
     private function parseImages(string $html): void
     {
-        if (! preg_match_all('/<img\b[^>]*>/i', $html, $matches)) {
-            return;
-        }
-
-        foreach ($matches[0] as $tag) {
+        foreach ($this->boundedMatches('/<img\b[^>]*>/i', $html, self::MAX_IMAGES) as $match) {
+            $tag = $match[0];
             $this->images[] = [
                 'src' => $this->attribute($tag, 'src') ?? '',
                 'alt' => $this->attribute($tag, 'alt'),
@@ -217,20 +221,17 @@ class HtmlDocument
 
     private function parseLinks(string $html): void
     {
-        if (! preg_match_all('/<a\b([^>]*)>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER)) {
-            return;
-        }
-
         $guard = $this->guard ?? new UrlGuard;
 
-        foreach ($matches as $match) {
+        foreach ($this->boundedMatches('/<a\b([^>]*)>(.*?)<\/a>/is', $html, self::MAX_LINKS) as $match) {
             $attributes = $match[1];
-            $href = $this->attributeFromString($attributes, 'href') ?? '';
+            $href = trim($this->attributeFromString($attributes, 'href') ?? '');
+            $href = strlen($href) > 2048 ? '' : $href;
             $rel = strtolower($this->attributeFromString($attributes, 'rel') ?? '');
 
             $this->links[] = [
-                'href' => trim($href),
-                'text' => $this->cleanText($match[2]),
+                'href' => $href,
+                'text' => substr($this->cleanText($match[2]), 0, 500),
                 'rel' => $rel,
             ];
 
@@ -262,11 +263,7 @@ class HtmlDocument
 
     private function parseScripts(string $html): void
     {
-        if (! preg_match_all('/<script\b([^>]*)>(.*?)<\/script>/is', $html, $matches, PREG_SET_ORDER)) {
-            return;
-        }
-
-        foreach ($matches as $match) {
+        foreach ($this->boundedMatches('/<script\b([^>]*)>(.*?)<\/script>/is', $html, self::MAX_SCRIPTS) as $match) {
             $attributes = $match[1];
             $src = $this->attributeFromString($attributes, 'src');
             $inline = trim($match[2]) !== '';
@@ -275,19 +272,21 @@ class HtmlDocument
                 'src' => $src ? trim($src) : null,
                 'type' => $this->attributeFromString($attributes, 'type'),
                 'inline' => $inline,
-                'content' => $inline ? trim($match[2]) : '',
+                'content' => $inline ? substr(trim($match[2]), 0, 8192) : '',
             ];
         }
     }
 
     private function parseStructuredData(string $html): void
     {
-        if (! preg_match_all('/<script[^>]+type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/is', $html, $matches)) {
-            return;
-        }
+        foreach ($this->boundedMatches('/<script[^>]+type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/is', $html, self::MAX_JSON_LD_BLOCKS) as $match) {
+            $block = trim($match[1]);
 
-        foreach ($matches[1] as $block) {
-            $decoded = json_decode(trim($block), true);
+            if (strlen($block) > 131072) {
+                continue;
+            }
+
+            $decoded = json_decode($block, true);
 
             if (is_array($decoded)) {
                 $this->jsonLd[] = $decoded;
@@ -297,11 +296,11 @@ class HtmlDocument
 
     private function parseCounts(string $html): void
     {
-        $this->paragraphCount = preg_match_all('/<p\b/i', $html);
-        $this->listCount = preg_match_all('/<(ul|ol)\b/i', $html);
-        $this->tableCount = preg_match_all('/<table\b/i', $html);
-        $this->formCount = preg_match_all('/<form\b/i', $html);
-        $this->iframeCount = preg_match_all('/<iframe\b/i', $html);
+        $this->paragraphCount = $this->countMatchesLimited('/<p\b/i', $html);
+        $this->listCount = $this->countMatchesLimited('/<(ul|ol)\b/i', $html);
+        $this->tableCount = $this->countMatchesLimited('/<table\b/i', $html);
+        $this->formCount = $this->countMatchesLimited('/<form\b/i', $html);
+        $this->iframeCount = $this->countMatchesLimited('/<iframe\b/i', $html);
     }
 
     private function parseText(string $html): void
@@ -319,11 +318,11 @@ class HtmlDocument
     private function attribute(string $tag, string $name): ?string
     {
         if (preg_match('/\b'.preg_quote($name, '/').'\s*=\s*(["\'])(.*?)\1/i', $tag, $matches)) {
-            return trim(html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            return substr(trim(html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')), 0, 2048);
         }
 
         if (preg_match('/\b'.preg_quote($name, '/').'\s*=\s*([^\s"\'>]+)/i', $tag, $matches)) {
-            return trim($matches[1]);
+            return substr(trim($matches[1]), 0, 2048);
         }
 
         return null;
@@ -348,6 +347,36 @@ class HtmlDocument
         $text = strip_tags($html);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        return trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+        return substr(trim(preg_replace('/\s+/u', ' ', $text) ?? $text), 0, 1000);
+    }
+
+    /** @return array<int,array<int,string>> */
+    private function boundedMatches(string $pattern, string $subject, int $limit): array
+    {
+        $matches = [];
+        $offset = 0;
+        $length = strlen($subject);
+        $count = 0;
+
+        while ($offset < $length && $count < $limit) {
+            $match = [];
+            $result = preg_match($pattern, $subject, $match, 0, $offset);
+
+            if ($result !== 1 || ! isset($match[0])) {
+                break;
+            }
+
+            $matches[] = $match;
+            $count++;
+            $nextOffset = $offset + strlen($match[0]);
+            $offset = $nextOffset > $offset ? $nextOffset : $offset + 1;
+        }
+
+        return $matches;
+    }
+
+    private function countMatchesLimited(string $pattern, string $subject): int
+    {
+        return count($this->boundedMatches($pattern, $subject, self::MAX_COUNTED_TAGS));
     }
 }

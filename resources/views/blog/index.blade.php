@@ -2,17 +2,17 @@
 @extends('layouts.marketing')
 
 @section('title', 'Blog | '.config('app.name'))
-@section('description', 'Practical notes on AdSense approval, ad network policy and publishing sites that pass review.')
+@section('description', 'Practical notes on publisher-site quality, ad-network policies, useful content and responsible monetisation.')
 
 @section('content')
 
 <section class="band">
     <div class="wrap">
         <p class="eyebrow mb-3">Blog</p>
-        <h1 class="mb-4">Approval notes</h1>
+        <h1 class="mb-4">Publisher notes</h1>
         <p class="lede" style="max-width:620px;">
-            What reviewers look for, what gets a site rejected, and the small changes that
-            move an approval from unlikely to likely.
+            Clear explanations of public-site quality, current policy sources, editorial trust
+            and practical improvements. Network requirements can change, so verify them directly.
         </p>
     </div>
 </section>

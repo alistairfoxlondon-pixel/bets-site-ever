@@ -112,12 +112,12 @@
         @else
             <div class="table-wrap">
                 <table class="table-app">
-                    <thead><tr><th>Site</th><th>Probability</th><th>Mode</th><th>Date</th></tr></thead>
+                    <thead><tr><th>Site</th><th>Readiness</th><th>Mode</th><th>Date</th></tr></thead>
                     <tbody>
                         @foreach ($topAudits as $audit)
                             <tr>
                                 <td><a href="{{ route('admin.audits.show', $audit) }}" class="font-semibold">{{ $audit->domain }}</a></td>
-                                <td class="num">{{ $audit->probability }}%</td>
+                                <td class="num">{{ $audit->score }}/100</td>
                                 <td class="text-sm muted">{{ ucfirst($audit->mode) }}</td>
                                 <td class="text-sm muted">{{ $audit->completed_at?->diffForHumans() }}</td>
                             </tr>

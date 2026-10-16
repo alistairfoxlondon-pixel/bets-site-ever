@@ -48,7 +48,20 @@ class InvoiceController extends Controller
             return back()->with('error', 'This invoice is already paid.');
         }
 
-        $service->completePayment($invoice, 'manual', 'manual-'.now()->format('YmdHis'), ['confirmed_by' => $request->user()->id]);
+        if (! in_array($invoice->status, ['pending', 'awaiting_review'], true)) {
+            return back()->with('error', 'This invoice cannot be marked as paid from its current status.');
+        }
+
+        $completed = $service->completePayment(
+            $invoice,
+            'manual',
+            'manual-'.$invoice->id.'-'.now()->format('YmdHis'),
+            ['confirmed_by' => $request->user()->id],
+        );
+
+        if (! $completed) {
+            return back()->with('error', 'The invoice could not be marked as paid. Refresh and review its current status.');
+        }
 
         return back()->with('status', 'Invoice marked as paid and the subscription was activated.');
     }

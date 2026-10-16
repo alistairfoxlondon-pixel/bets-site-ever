@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -200,27 +201,60 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function grantCredits(int $amount, string $type, string $description, ?string $referenceType = null, ?int $referenceId = null): void
     {
-        $this->increment('credits_balance', $amount);
+        DB::transaction(function () use ($amount, $type, $description, $referenceType, $referenceId): void {
+            $user = static::query()->lockForUpdate()->findOrFail($this->getKey());
+            $balance = round((float) $user->credits_balance + $amount, 2);
 
-        $this->creditTransactions()->create([
-            'type' => $type,
-            'amount' => $amount,
-            'balance_after' => (float) $this->fresh()->credits_balance,
-            'description' => $description,
-            'reference_type' => $referenceType,
-            'reference_id' => $referenceId,
-        ]);
+            if ($balance < 0) {
+                throw new \InvalidArgumentException('A credit adjustment cannot make the account balance negative.');
+            }
+
+            $user->credits_balance = $balance;
+            $user->save();
+
+            $user->creditTransactions()->create([
+                'type' => $type,
+                'amount' => $amount,
+                'balance_after' => $balance,
+                'description' => $description,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+            ]);
+
+            $this->setAttribute('credits_balance', $user->credits_balance);
+        });
     }
 
     public function spendCredits(int $amount, string $description, ?string $referenceType = null, ?int $referenceId = null): bool
     {
-        if ((float) $this->credits_balance < $amount) {
+        if ($amount <= 0) {
             return false;
         }
 
-        $this->grantCredits(-$amount, 'usage', $description, $referenceType, $referenceId);
+        return DB::transaction(function () use ($amount, $description, $referenceType, $referenceId): bool {
+            $user = static::query()->lockForUpdate()->find($this->getKey());
 
-        return true;
+            if (! $user || (float) $user->credits_balance < $amount) {
+                return false;
+            }
+
+            $balance = round((float) $user->credits_balance - $amount, 2);
+            $user->credits_balance = $balance;
+            $user->save();
+
+            $user->creditTransactions()->create([
+                'type' => 'usage',
+                'amount' => -$amount,
+                'balance_after' => $balance,
+                'description' => $description,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+            ]);
+
+            $this->setAttribute('credits_balance', $user->credits_balance);
+
+            return true;
+        });
     }
 
     public function recordLogin(?string $ip): void

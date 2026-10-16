@@ -22,7 +22,9 @@ class PaymobGateway extends AbstractGateway
 
     public function isConfigured(): bool
     {
-        return filled($this->credential('public_key')) && filled($this->credential('secret_key'));
+        // The current adapter does not yet implement Paymob's complete, verified
+        // payment-key/iframe flow. Keep it out of checkout until that is finished.
+        return false;
     }
 
     private function baseUrl(): string
@@ -79,7 +81,7 @@ class PaymobGateway extends AbstractGateway
 
         $orderId = $order->json('id');
 
-        if (blank($orderId)) {
+        if (! $order->successful() || blank($orderId)) {
             return PaymentIntent::failed('Paymob did not return an order.');
         }
 
@@ -98,44 +100,26 @@ class PaymobGateway extends AbstractGateway
         }
 
         $token = (string) $payment->json('token');
+
+        if (! $payment->successful() || ! preg_match('/^[A-Za-z0-9._~-]{1,2048}$/D', $token)) {
+            return PaymentIntent::failed('Paymob did not return a valid payment token.');
+        }
+
         $iframe = route('billing.callback', ['gateway' => $this->slug(), 'invoice' => $invoice->id]);
+        $scriptToken = htmlspecialchars($token, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return PaymentIntent::redirect(
-            $iframe.'?payment_token='.$token,
+            $iframe.'?'.http_build_query(['payment_token' => $token]),
             $token,
-            ['script' => '<script src="https://accept.paymob.com/api/accept.js" data-token="'.$token.'"></script>']
+            ['script' => '<script src="https://accept.paymob.com/api/accept.js" data-token="'.$scriptToken.'"></script>']
         );
     }
 
     public function handleCallback(Request $request, Invoice $invoice): bool
     {
-        $transactionId = $request->input('data.order_id') ?: $request->query('order_id');
-
-        if (blank($transactionId)) {
-            return false;
-        }
-
-        $token = $this->authToken();
-
-        if (blank($token)) {
-            return false;
-        }
-
-        try {
-            $response = $this->client()
-                ->withToken($token)
-                ->get($this->baseUrl().'/ecommerce/orders/'.urlencode((string) $transactionId));
-        } catch (\Throwable $exception) {
-            $this->logError('fetch', $exception);
-
-            return false;
-        }
-
-        if (! $response->successful() || $response->json('pending') === true) {
-            return false;
-        }
-
-        return $this->markPaid($invoice, (string) $transactionId, $response->json());
+        // The current callback does not yet verify the Paymob transaction, invoice,
+        // amount, and currency through the documented transaction endpoint.
+        return false;
     }
 
     public function verifyWebhook(Request $request): ?bool
