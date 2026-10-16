@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 40" role="img" aria-label="Paymob">
+  <g transform="translate(0,0)">
+    <rect x="1" y="5" width="30" height="30" rx="6" fill="#6a2c8f"/>
+    <circle cx="12" cy="20" r="3.4" fill="#ffffff"/>
+    <circle cx="20" cy="20" r="3.4" fill="#ffffff" opacity=".7"/>
+  </g>
+  <text x="40" y="26" font-size="18" font-weight="700" fill="#6a2c8f" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.2">paymob</text>
+</svg>

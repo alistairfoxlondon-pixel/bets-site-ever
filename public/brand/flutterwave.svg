@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 40" role="img" aria-label="Flutterwave">
+  <g transform="translate(0,0)">
+    <path d="M4 12h8l5 14 5-14h8l-9 22h-8z" fill="#1a3e6e"/>
+    <path d="M17 12h8l-4 9z" fill="#f9a825"/>
+  </g>
+  <text x="40" y="26" font-size="17" font-weight="700" fill="#1a3e6e" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.2">flutterwave</text>
+</svg>

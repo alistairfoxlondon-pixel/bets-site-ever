@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 40" role="img" aria-label="AdReady">
+  <g transform="translate(0,0)">
+    <rect x="0" y="2" width="36" height="36" rx="5" fill="#12395a"/>
+    <path d="M18 8 L27 28 L21.5 28 L18 21 L14.5 28 L9 28 Z" fill="#ffffff"/>
+    <rect x="14.5" y="23" width="7" height="1.8" fill="#7fb2d9"/>
+  </g>
+  <text x="46" y="27" font-size="22" font-weight="400" fill="#16202b" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.2">AdReady</text>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 178 40" role="img" aria-label="Mediavine">
+  <g transform="translate(0,0)">
+    <path d="M20 4c7 0 12 4.6 12 10.5C32 21 26.4 25 20 25 13.6 25 8 21 8 14.5 8 8.6 13 4 20 4z" fill="#2e933c"/>
+    <path d="M20 36c2.6-6.6 6.4-11.6 11.4-15" stroke="#2e933c" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M13 29c-1.8-3-4-5.4-6.6-7" stroke="#2e933c" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".65"/>
+  </g>
+  <text x="42" y="26" font-size="18" font-weight="700" fill="#1f6f3f" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.3">mediavine</text>
+</svg>
