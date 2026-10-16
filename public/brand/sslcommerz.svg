@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 40" role="img" aria-label="SSLCommerz">
+  <g transform="translate(0,0)">
+    <rect x="1" y="6" width="28" height="28" rx="3" fill="#f26522"/>
+    <path d="M15 12l-6 8h5l-1 8 6-9h-5z" fill="#ffffff"/>
+  </g>
+  <text x="38" y="20" font-size="13" font-weight="700" fill="#1f2b3a" font-family='"Helvetica Neue", Arial, sans-serif'>SSL</text>
+  <text x="38" y="33" font-size="13" font-weight="500" fill="#f26522" font-family='"Helvetica Neue", Arial, sans-serif'>COMMERZ</text>
+</svg>

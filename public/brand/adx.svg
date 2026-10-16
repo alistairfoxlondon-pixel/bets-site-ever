@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 40" role="img" aria-label="Google Ad Manager">
+  <g transform="translate(0,0)">
+    <rect x="1" y="5" width="30" height="30" rx="4" fill="#ffffff" stroke="#c4d4e0" stroke-width="1.2"/>
+    <path d="M7 29 L16 11 L25 29 L20 29 L16 21 L12 29 Z" fill="#1a73e8"/>
+    <circle cx="16" cy="26" r="2.4" fill="#fbbc04"/>
+  </g>
+  <text x="40" y="20" font-size="13.5" font-weight="700" fill="#3c4043" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.1">Google</text>
+  <text x="40" y="33" font-size="13.5" font-weight="500" fill="#5f6368" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.1">Ad Manager</text>
+</svg>

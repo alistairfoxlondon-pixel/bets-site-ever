@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 186 40" role="img" aria-label="AamarPay">
+  <g transform="translate(0,0)">
+    <circle cx="17" cy="20" r="15" fill="#1b6ac9"/>
+    <path d="M10.5 25.5l6.5-13 6.5 13" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="40" y="26" font-size="17" font-weight="700" fill="#1b6ac9" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.2">aamarPay</text>
+</svg>

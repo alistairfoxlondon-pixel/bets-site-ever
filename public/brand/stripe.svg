@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 40" role="img" aria-label="Stripe">
+  <g transform="translate(0,0)">
+    <rect x="1" y="5" width="30" height="30" rx="4" fill="#635bff"/>
+    <path d="M11 22.4c0-1 .8-1.4 2.1-1.4 1.7 0 3.9.5 5.6 1.4v-5.3a10 10 0 0 0-5.1-1.2c-4.2 0-7 2.1-7 5.6 0 5.5 7.6 4.6 7.6 7 0 1.1-.9 1.5-2.3 1.5-1.9 0-4.4-.8-6.3-1.8v5.4c2.1.8 4.2 1.2 6.3 1.2 4.3 0 7.2-2 7.2-5.6 0-5.8-7.1-4.8-7.1-6.8z" fill="#ffffff"/>
+  </g>
+  <text x="40" y="26" font-size="18" font-weight="700" fill="#635bff" font-family='"Helvetica Neue", Arial, sans-serif' letter-spacing="-.2">stripe</text>
+</svg>
