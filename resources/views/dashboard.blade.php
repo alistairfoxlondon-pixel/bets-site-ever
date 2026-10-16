@@ -23,8 +23,8 @@
         <div class="s">ready to spend</div>
     </div>
     <div class="stat">
-        <div class="k">Best score</div>
-        <div class="v">{{ $ready?->probability ?? 0 }}<span class="muted" style="font-size:1rem;">%</span></div>
+        <div class="k">Best readiness</div>
+        <div class="v">{{ $ready?->score ?? 0 }}<span class="muted" style="font-size:1rem;">/100</span></div>
         <div class="s">{{ $ready?->domain ?? 'no audit yet' }}</div>
     </div>
 </div>
@@ -76,7 +76,7 @@
                     <thead>
                         <tr>
                             <th>Site</th>
-                            <th>Score</th>
+                            <th>Readiness</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -85,18 +85,21 @@
                             <tr>
                                 <td>
                                     <a href="{{ route('audits.show', $audit) }}" class="font-semibold">{{ $audit->domain }}</a>
+                                    @if (data_get($audit->meta, 'sample_data'))
+                                        <span class="badge badge-muted">Example</span>
+                                    @endif
                                     <div class="faint text-xs">{{ $audit->completed_at?->diffForHumans() ?? 'running' }}</div>
                                 </td>
                                 <td class="num">
                                     @if ($audit->status === 'completed')
-                                        {{ $audit->probability }}%
+                                        {{ $audit->score }}/100
                                     @else
                                         <span class="faint">--</span>
                                     @endif
                                 </td>
                                 <td>
                                     @if ($audit->status === 'completed')
-                                        <span class="badge {{ $audit->probability >= 78 ? 'badge-pass' : ($audit->probability >= 55 ? 'badge-warn' : 'badge-fail') }}">{{ $audit->verdictLabel() }}</span>
+                                        <span class="badge {{ $audit->score >= 78 ? 'badge-pass' : ($audit->score >= 55 ? 'badge-warn' : 'badge-fail') }}">{{ $audit->verdictLabel() }}</span>
                                     @elseif ($audit->status === 'failed')
                                         <span class="badge badge-fail">Failed</span>
                                     @else

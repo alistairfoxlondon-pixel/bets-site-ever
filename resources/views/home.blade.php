@@ -1,8 +1,8 @@
 
 @extends('layouts.marketing')
 
-@section('title', config('app.name').' | Know your approval odds before you apply')
-@section('description', 'AdReady audits your site against Google AdSense, AdX, Ezoic, Mediavine and Raptive, then gives you a realistic approval probability, a ranked fix list and a professional PDF report.')
+@section('title', config('app.name').' | Understand your publisher-site readiness')
+@section('description', 'Review public site signals for Google AdSense, Google Ad Manager, Ezoic, Mediavine and Raptive with evidence-linked findings, prioritised improvements and a branded PDF report.')
 
 @section('content')
 
@@ -10,12 +10,12 @@
     <div class="wrap">
         <div class="grid grid-2" style="gap:3.5rem;align-items:center;">
             <div>
-                <p class="eyebrow mb-3">Ad network approval auditor</p>
-                <h1>Know your approval odds before you apply.</h1>
+                <p class="eyebrow mb-3">Publisher-site readiness audit</p>
+                <h1>See the signals behind a stronger publishing site.</h1>
                 <p class="lede mt-4">
-                    Point AdReady at any site. It crawls the pages a reviewer would look at,
-                    runs the policy and quality checks that decide approval, and tells you the
-                    real number with a step by step plan to fix the rest.
+                    Crawl a sample of public pages, review visible content and technical signals,
+                    then get evidence-linked findings and a practical plan. The readiness index is
+                    a product heuristic, not an approval prediction.
                 </p>
 
                 <div class="flex flex-wrap items-center gap-3 mt-7">
@@ -38,7 +38,7 @@
 
 <section class="band band-tight band-line">
     <div class="wrap">
-        <p class="text-center muted text-sm mb-6">One audit, five ad networks, one honest number</p>
+        <p class="text-center muted text-sm mb-6">One crawl, five network-specific public-signal views</p>
         <div class="logo-strip justify-center">
             <img src="/brand/adsense.svg" alt="Google AdSense" height="30">
             <img src="/brand/adx.svg" alt="Google Ad Manager" height="30">
@@ -56,8 +56,8 @@
                 <p class="eyebrow mb-3">Under the hood</p>
                 <h2 class="mb-3">What happens when you run an audit</h2>
                 <p class="muted">
-                    No black box. Every point in the score comes from a check you can read,
-                    and every check points at a page on your site.
+                    Review the deterministic checks, inspect the crawl evidence, and decide which
+                    recommendations fit your site. Model observations are advisory, not verified facts.
                 </p>
             </div>
 
@@ -78,9 +78,9 @@
                 <p class="eyebrow mb-3">The report</p>
                 <h2 class="mb-3">A document you can act on, not a score to brag about</h2>
                 <p class="muted mb-5">
-                    Every audit ends with a professional PDF report: the approval probability,
-                    the score behind every category, the findings ranked by severity, how ready
-                    you are for each ad network, and the exact order to fix things in.
+                    Every audit includes a branded PDF with the internal readiness index, category
+                    signals, findings, crawl limitations, and prioritised improvements. Traffic,
+                    account status and partner eligibility are not assessed from public pages.
                 </p>
 
                 <ul class="space-y-3">
@@ -89,8 +89,8 @@
                             @include('partials.icons', ['name' => 'target', 'class' => 'w-5 h-5'])
                         </span>
                         <span>
-                            <strong class="block">Realistic probability</strong>
-                            <span class="muted text-sm">Blended from a deterministic rule audit and a deep model review, so the number moves for the right reasons.</span>
+                            <strong class="block">Public-site readiness index</strong>
+                            <span class="muted text-sm">A weighted product heuristic from sampled page findings, not a calibrated probability or network decision.</span>
                         </span>
                     </li>
                     <li class="flex gap-3">
@@ -99,7 +99,7 @@
                         </span>
                         <span>
                             <strong class="block">Findings in green, amber and red</strong>
-                            <span class="muted text-sm">Every finding carries the evidence that triggered it and the specific fix that moves the score.</span>
+                            <span class="muted text-sm">Deterministic findings show sampled evidence; model notes are separated and should be checked in context.</span>
                         </span>
                     </li>
                     <li class="flex gap-3">
@@ -107,8 +107,8 @@
                             @include('partials.icons', ['name' => 'clock', 'class' => 'w-5 h-5'])
                         </span>
                         <span>
-                            <strong class="block">First attempt roadmap</strong>
-                            <span class="muted text-sm">A numbered sequence of changes to make before you apply, ordered by the weight reviewers give them.</span>
+                            <strong class="block">Prioritised improvement plan</strong>
+                            <span class="muted text-sm">A practical sequence based on potential impact and product rules; verify each item before making changes.</span>
                         </span>
                     </li>
                 </ul>
@@ -121,21 +121,21 @@
     <div class="wrap">
         <div class="text-center" style="max-width:640px;margin-inline:auto;">
             <p class="eyebrow mb-3">What gets checked</p>
-            <h2 class="mb-3">The same six areas reviewers look at</h2>
+            <h2 class="mb-3">Six areas of public-site signals</h2>
             <p class="muted">
-                Google does not publish a checklist, so we built one from what actually gets
-                sites approved or rejected, then tested it against real sites.
+                These product-defined checks help you review a public site. They are not an official
+                network checklist and cannot predict an application outcome.
             </p>
         </div>
 
         <div class="grid grid-3 mt-8" style="gap:1.25rem;">
             @foreach ([
-                ['icon' => 'document', 'title' => 'Content quality', 'text' => 'Depth, originality, readability and whether each post is worth a reader\'s time.'],
-                ['icon' => 'shield', 'title' => 'Policy risk', 'text' => 'Thin content, copied material, prohibited topics, missing disclosures and unsafe outbound links.'],
-                ['icon' => 'users', 'title' => 'Traffic quality', 'text' => 'Engagement signals, bounce patterns, and whether the audience looks like real readers.'],
-                ['icon' => 'key', 'title' => 'Trust and E-E-A-T', 'text' => 'Author identity, contact routes, about pages, privacy terms and a visible editorial voice.'],
-                ['icon' => 'search', 'title' => 'SEO and indexing', 'text' => 'Crawlability, canonical tags, robots rules, sitemap health, structured data and page speed.'],
-                ['icon' => 'layers', 'title' => 'Design and monetisation', 'text' => 'Mobile layout, navigation depth, ad placement readiness and the technical state of the site.'],
+                ['icon' => 'document', 'title' => 'Content signals', 'text' => 'Sampled page depth, repeated phrasing, headings, readability and visible usefulness cues.'],
+                ['icon' => 'shield', 'title' => 'Policy context', 'text' => 'Public-page signals such as disclosure links, download references, navigation and content context; no policy verdict is guaranteed.'],
+                ['icon' => 'users', 'title' => 'Traffic quality', 'text' => 'Not assessed by a public crawl. Review your own analytics and traffic-source evidence separately.'],
+                ['icon' => 'key', 'title' => 'Trust and publisher identity', 'text' => 'Visible author signals, contact routes, about and privacy links, and publisher details.'],
+                ['icon' => 'search', 'title' => 'SEO and discovery', 'text' => 'Crawlable page signals, robots rules, sitemap discovery, metadata, structured data and response time.'],
+                ['icon' => 'layers', 'title' => 'Technical experience', 'text' => 'HTTPS, viewport declarations, response size and other technical details detectable in the sampled markup.'],
             ] as $feature)
                 <div class="feature">
                     <span class="icon-box">
@@ -154,11 +154,11 @@
         <div class="grid grid-2" style="gap:3rem;align-items:center;">
             <div>
                 <p class="eyebrow mb-3" style="color:#8fc0e6;">Also inside the account</p>
-                <h2 class="mb-3" style="color:#fff;">Write the articles the auditor asks for</h2>
+                <h2 class="mb-3" style="color:#fff;">Draft useful publisher content</h2>
                 <p class="mb-6" style="color:#bcd3e6;">
-                    When the report says the site needs 25 substantial posts, the writer produces
-                    them. AdSense ready articles and affiliate articles with a disclosure in the
-                    first paragraph, exported for WordPress, Blogger, Shopify and Wix.
+                    Create reader-first informational or affiliate drafts with SEO metadata, FAQs,
+                    publisher-supplied links and disclosure prompts. Review every draft for accuracy
+                    before publishing; no article can guarantee search visibility or network approval.
                 </p>
                 <div class="flex flex-wrap gap-3">
                     <a href="{{ route('writer.landing') }}" class="btn btn-lg" style="background:#fff;color:#12395a;border-color:#fff;">Open the writer</a>
@@ -186,14 +186,14 @@
                 <div class="s">audited at least once</div>
             </div>
             <div class="stat">
-                <div class="k">Checks per audit</div>
-                <div class="v">120<span class="muted" style="font-size:1rem;">+</span></div>
-                <div class="s">across six review areas</div>
+                <div class="k">Review areas</div>
+                <div class="v">6</div>
+                <div class="s">including traffic marked not assessed</div>
             </div>
             <div class="stat">
-                <div class="k">Networks scored</div>
+                <div class="k">Network views</div>
                 <div class="v">5</div>
-                <div class="s">from AdSense to Raptive</div>
+                <div class="s">public signals, not eligibility checks</div>
             </div>
         </div>
     </div>
@@ -248,12 +248,12 @@
 
         <div class="card" style="padding:0 1.4rem;">
             @foreach ([
-                ['Does a high score guarantee approval?', 'No. It tells you how a reviewer would most likely see your site today. Approval also depends on how the site is configured when you apply and on traffic that the crawler cannot see.'],
-                ['What does the crawler actually read?', 'The home page, robots.txt, the sitemap, ads.txt and the article pages a visitor would land on. It never logs in and it never submits forms.'],
+                ['Does a high readiness index guarantee approval?', 'No. The index is a product-defined heuristic from sampled public pages. It does not predict a network decision, and it cannot assess private analytics, account history or current eligibility terms.'],
+                ['What does the crawler actually read?', 'It requests the submitted site and a limited set of discoverable public pages and files, subject to crawl limits and site responses. It never logs in or submits forms. Some pages may be missed.']
                 ['Can I audit a competitor site?', 'Yes. Auditing a public site is allowed. You cannot log in, and nothing is changed on the target site.'],
                 ['How many credits does an audit use?', 'Normal uses one credit, Standard uses three and Premium uses six. The Standard plan includes 40 credits each month.'],
                 ['Do you keep my audits?', 'Yes. Every audit is stored against your account so you can re-run it after a fix and compare the two runs side by side.'],
-                ['Which languages can the writer produce?', 'The writer works in the language you ask for. English is the strongest because that is what the ad networks review most closely.'],
+                ['Which languages can the writer produce?', 'The writer supports languages available in your configured model. Review translations and fact-sensitive details with a fluent reader before publishing.'],
             ] as $index => $faq)
                 <details class="qa" @if ($index === 0) open @endif>
                     <summary>{{ $faq[0] }}</summary>

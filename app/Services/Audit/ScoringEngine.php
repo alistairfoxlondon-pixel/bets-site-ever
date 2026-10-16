@@ -3,15 +3,14 @@
 namespace App\Services\Audit;
 
 /**
- * Turns findings into a readiness score, an approval probability and a
- * verdict. The weights live in config/adready.php so they can be tuned
- * without touching code.
+ * Converts observed findings into a product-defined public-site readiness
+ * index. It is not an approval probability or a network eligibility score.
  */
 class ScoringEngine
 {
     /**
      * @param  array<int,array<string,mixed>>  $findings
-     * @return array{score:int,probability:int,verdict:string,category_scores:array<string,float>,breakdown:array<string,int>}
+     * @return array{score:int,readiness_index:int,verdict:string,category_scores:array<string,float|null>,breakdown:array<string,int>}
      */
     public function score(array $findings): array
     {
@@ -20,6 +19,8 @@ class ScoringEngine
 
         $categoryScores = [];
         $breakdown = [];
+        $weightedScore = 0.0;
+        $totalWeight = 0.0;
 
         foreach ($categories as $key => $meta) {
             $categoryFindings = array_values(array_filter($findings, fn (array $finding) => $finding['category'] === $key));
@@ -47,24 +48,31 @@ class ScoringEngine
                 $penalty += (float) ($penalties[$severity] ?? 0);
             }
 
-            $weight = (float) $meta['weight'];
-            $raw = $weight > 0 ? ($weight - $penalty) / $weight * 100 : 100;
-            $score = max(0, min(100, $raw));
-
-            $categoryScores[$key] = round($score, 1);
+            $importance = max(0.0, (float) ($meta['weight'] ?? 0));
             $breakdown[$key] = count($categoryFindings);
+
+            if ($importance <= 0) {
+                $categoryScores[$key] = null;
+
+                continue;
+            }
+
+            $score = max(0.0, min(100.0, 100.0 - $penalty));
+            $categoryScores[$key] = round($score, 1);
+            $weightedScore += $score * $importance;
+            $totalWeight += $importance;
         }
 
-        $overall = array_sum($categoryScores) / max(1, count($categoryScores));
-        $criticalCount = count(array_filter($findings, fn (array $f) => $f['severity'] === AuditFindingSeverity::CRITICAL));
+        $overall = $totalWeight > 0 ? $weightedScore / $totalWeight : 0;
 
-        // Critical issues pull the probability down harder than the raw score.
-        $probability = (int) round(max(0, min(100, $overall - ($criticalCount * 6))));
+        // This is a heuristic readiness index, not a statistically calibrated
+        // approval probability. Critical findings already carry larger weights.
+        $readinessIndex = (int) round(max(0, min(100, $overall)));
 
         $verdict = 'high_risk';
 
         foreach (config('adready.score.verdicts') as $key => $meta) {
-            if ($probability >= $meta['min']) {
+            if ($readinessIndex >= $meta['min']) {
                 $verdict = $key;
 
                 break;
@@ -73,7 +81,7 @@ class ScoringEngine
 
         return [
             'score' => (int) round($overall),
-            'probability' => $probability,
+            'readiness_index' => $readinessIndex,
             'verdict' => $verdict,
             'category_scores' => $categoryScores,
             'breakdown' => $breakdown,

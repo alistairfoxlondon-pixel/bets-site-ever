@@ -1,8 +1,8 @@
 
 @extends('layouts.marketing')
 
-@section('title', 'AdSense approval checker | '.config('app.name'))
-@section('description', 'Audit any site for Google AdSense, AdX, Ezoic, Mediavine and Raptive approval. Get a realistic probability, a ranked fix list and a PDF report.')
+@section('title', 'Publisher-site audit | '.config('app.name'))
+@section('description', 'Review sampled public signals for Google AdSense, Google Ad Manager, Ezoic, Mediavine and Raptive with an evidence-linked report and practical next steps.')
 
 @section('content')
 
@@ -10,11 +10,12 @@
     <div class="wrap">
         <div class="grid grid-2" style="gap:3rem;align-items:center;">
             <div>
-                <p class="eyebrow mb-3">Approval auditor</p>
-                <h1 class="mb-4">Check a site before you apply</h1>
+                <p class="eyebrow mb-3">Publisher-site audit</p>
+                <h1 class="mb-4">Review the signals your public site shows</h1>
                 <p class="lede">
-                    Enter a domain. We crawl the pages a reviewer would open, run the checks that
-                    decide approval, and hand you a probability with a plan to improve it.
+                    Enter a domain. We crawl a limited set of public pages and return an internal
+                    readiness index with evidence-linked findings and practical improvements. It is
+                    not a prediction of network eligibility or approval.
                 </p>
 
                 <form method="GET" action="{{ auth()->check() ? route('audits.create') : route('register') }}" class="card mt-7" style="padding:1.3rem;">
@@ -73,8 +74,8 @@
     <div class="wrap">
         <div class="text-center" style="max-width:640px;margin-inline:auto;">
             <p class="eyebrow mb-3">Five networks, one crawl</p>
-            <h2 class="mb-3">The same audit tells you where you stand with every network</h2>
-            <p class="muted mb-8">Each network adds its own requirements on top of the AdSense bar. The report shows all five side by side.</p>
+            <h2 class="mb-3">Compare sampled public signals by network</h2>
+            <p class="muted mb-8">Network-specific views group a few visible site signals. Current program terms, traffic and account eligibility are not verified by this crawl.</p>
         </div>
 
         <div class="visual-frame mx-auto">

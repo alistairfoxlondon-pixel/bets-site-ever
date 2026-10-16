@@ -3,7 +3,7 @@
 
 @section('title', 'Write an article')
 @section('heading', 'Write an article')
-@section('subheading', $type === 'affiliate_article' ? 'Affiliate article with a disclosure in the first paragraph' : 'AdSense ready informational article')
+@section('subheading', $type === 'affiliate_article' ? 'Affiliate draft with a clear disclosure near the opening' : 'Publisher-focused informational article draft')
 
 @section('content')
 

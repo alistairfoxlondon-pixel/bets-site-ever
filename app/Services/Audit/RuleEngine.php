@@ -5,13 +5,13 @@ namespace App\Services\Audit;
 use Illuminate\Support\Str;
 
 /**
- * Deterministic checks that mirror what a human AdSense reviewer looks at.
- * Every finding carries a category, a severity, an explanation and a concrete
- * fix so the user can act on the report.
+ * Deterministic checks over the pages the crawler could read. Findings are
+ * product heuristics, not official network criteria or a substitute for human
+ * review; each includes observed evidence and a practical next step.
  */
 class RuleEngine
 {
-    /** Phrases that scream "written by a model" to both readers and reviewers. */
+    /** Generic stock phrases used only for a non-scoring writing-quality note. */
     private const AI_PHRASES = [
         'delve into', 'delve deeper', 'in today\'s fast-paced', 'in today\'s digital world',
         'it\'s important to note', 'navigate the complexities', 'unlock the potential',
@@ -42,6 +42,7 @@ class RuleEngine
             $this->trustChecks($snapshot),
             $this->seoChecks($snapshot),
             $this->technicalChecks($snapshot),
+            $this->crawlLimitChecks($snapshot),
             $this->trafficChecks($snapshot),
         );
 
@@ -65,57 +66,67 @@ class RuleEngine
         if ($homeWords < 300) {
             $findings[] = $this->finding(
                 'content_quality',
-                'warning',
-                'Home page is thin',
-                "The home page carries {$homeWords} words of visible text. Reviewers expect a home page that shows what the site is about and links to substantive content.",
-                'Rewrite the home page so it explains the topic, shows your best writing and links to at least five strong articles.',
+                'info',
+                'Limited visible copy on the home page',
+                "The crawler counted {$homeWords} visible words on the home page. This product heuristic does not measure usefulness or establish a network requirement.",
+                'Make the site purpose clear and link to your most useful pages; do not add text just to meet a word target.',
                 ['home_page_words' => $homeWords],
-                6
+                0
             );
         } else {
             $findings[] = $this->finding(
                 'content_quality',
                 'pass',
-                'Home page has meaningful content',
-                "The home page carries {$homeWords} words, which is a healthy amount of original copy.",
+                'Home page has substantial visible copy',
+                "The crawler counted {$homeWords} visible words on the home page. This count alone does not assess quality or originality.",
                 null,
                 ['home_page_words' => $homeWords]
             );
         }
 
-        $average = $snapshot->averageWordCount;
+        $average = $snapshot->averageWordCount();
 
         if ($average > 0 && $average < 500) {
             $findings[] = $this->finding(
                 'content_quality',
-                'warning',
-                'Average page length is below the review threshold',
-                "Pages average {$average} words. Networks that judge quality look for pages that genuinely answer a question, and 800 words or more is the safe range for a content site.",
-                'Expand the weakest pages with first hand experience, examples and step by step instructions rather than padding them.',
+                'info',
+                'Review the shortest pages for usefulness',
+                "Crawled pages average {$average} words. This is a rough product heuristic, not an official or universal word-count requirement.",
+                'Check whether short pages answer their intended question. Improve usefulness rather than adding filler to reach a target.',
                 ['average_words' => $average],
-                8
+                0
             );
         }
 
         $posts = $snapshot->posts();
         $postCount = count($posts);
 
-        if ($postCount < 10) {
+        if ($postCount === 0) {
             $findings[] = $this->finding(
                 'content_quality',
-                $postCount < 5 ? 'critical' : 'warning',
-                'Not enough published articles',
-                "Only {$postCount} article pages were found. AdSense reviewers usually want to see a library of at least 25 to 30 original posts before a site is monetised.",
-                'Publish consistently. A steady schedule of two to three well researched posts a week for two months is more convincing than ten thin posts.',
+                'warning',
+                'No article pages detected',
+                "Only {$postCount} article-style pages were detected in this crawl. This is not a fixed post-count requirement, and a limited crawl can miss pages.",
+                'Make sure your strongest original pages are discoverable from navigation or a sitemap, then improve usefulness and coverage rather than chasing a post count.',
                 ['articles_found' => $postCount],
-                14
+                4
+            );
+        } elseif ($postCount < 10) {
+            $findings[] = $this->finding(
+                'content_quality',
+                'info',
+                'Article-style pages detected',
+                "{$postCount} article-style pages were detected. There is no fixed post-count requirement, and this crawl may not find every page.",
+                'Make sure your most useful pages are reachable from navigation or your sitemap.',
+                ['articles_found' => $postCount],
+                0
             );
         } else {
             $findings[] = $this->finding(
                 'content_quality',
                 'pass',
-                'The site has a real content library',
-                "{$postCount} article pages were crawled, which shows the site is more than a shell.",
+                'Article-style pages detected',
+                "{$postCount} article-style pages were identified in this limited crawl. This count does not assess page quality.",
                 null,
                 ['articles_found' => $postCount]
             );
@@ -123,18 +134,18 @@ class RuleEngine
 
         $thin = $snapshot->thinPages();
 
-        if ($thin !== [] && count($snapshot->pages) > 0) {
-            $ratio = round(count($thin) / count($snapshot->pages) * 100);
+        if ($thin !== [] && count($snapshot->contentPages()) > 0) {
+            $ratio = round(count($thin) / count($snapshot->contentPages()) * 100);
 
             if ($ratio >= 30) {
                 $findings[] = $this->finding(
                     'content_quality',
-                    'critical',
-                    'Most pages are thin',
-                    "{$ratio} percent of the crawled pages have fewer than 350 words. Pages that thin are treated as low value content.",
-                    'Either deepen the existing pages or remove the ones that have nothing useful to say. Do not leave empty category and tag archives indexed.',
-                    ['thin_pages' => count($thin), 'pages_checked' => count($snapshot->pages)],
-                    15
+                    'warning',
+                    'Many sampled pages have limited visible text',
+                    "{$ratio} percent of the sampled pages have fewer than 350 visible words. The 350-word cutoff is an internal review heuristic; a short page can still be useful, and some page types are expected to be brief.",
+                    'Review these pages for missing answers or context. Keep concise pages that serve a clear purpose; do not add filler or remove useful pages to meet a count.',
+                    ['thin_pages' => count($thin), 'pages_checked' => count($snapshot->contentPages())],
+                    5
                 );
             }
         }
@@ -144,12 +155,12 @@ class RuleEngine
         if ($aiHits !== []) {
             $findings[] = $this->finding(
                 'content_quality',
-                'warning',
-                'Phrasing that reads like machine written copy',
-                'The page contains stock phrases that both readers and reviewers recognise as generated text: '.implode(', ', array_slice($aiHits, 0, 5)).'.',
-                'Rewrite those sentences in your own voice. Describe what you have actually seen or tested, and cut the filler introductions.',
+                'info',
+                'Generic stock phrases found',
+                'Common generic phrases appear on the sampled home page: '.implode(', ', array_slice($aiHits, 0, 5)).'. This wording alone cannot determine who or what wrote the page.',
+                'Replace vague openings with specific, useful information and only describe experiences you can substantiate.',
                 ['phrases' => array_slice($aiHits, 0, 8)],
-                9
+                0
             );
         }
 
@@ -158,17 +169,17 @@ class RuleEngine
         if ($stuffed !== []) {
             $findings[] = $this->finding(
                 'content_quality',
-                'warning',
-                'Possible keyword stuffing',
-                'These terms take an unusually large share of the text: '.implode(', ', array_keys($stuffed)).'.',
-                'Use each term where it reads naturally. Cover the topic properly instead of repeating one phrase.',
+                'info',
+                'Repeated terms on the home page',
+                'These terms occur unusually often in the sampled text: '.implode(', ', array_keys($stuffed)).'. This frequency heuristic can flag natural topic language and does not establish manipulation.',
+                'Read the surrounding copy for awkward repetition and revise only where it reduces clarity.',
                 ['terms' => $stuffed],
-                7
+                0
             );
         }
 
         $titles = [];
-        foreach ($snapshot->pages as $page) {
+        foreach ($snapshot->contentPages() as $page) {
             if ($page->document->title) {
                 $titles[$page->document->title] = ($titles[$page->document->title] ?? 0) + 1;
             }
@@ -179,11 +190,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'content_quality',
                 'warning',
-                'Duplicate page titles',
-                count($duplicates).' page titles appear more than once, which makes the pages look like copies of each other.',
-                'Give every page a title that matches the page itself and drop the site name from all but one place on the page.',
+                'Repeated page titles in the sample',
+                count($duplicates).' title values repeat across sampled pages. This can make search snippets less distinct, but repeated titles alone do not prove duplicate content.',
+                'Check whether each title clearly describes its page and distinguish pages where it helps users.',
                 ['duplicate_titles' => array_keys($duplicates)],
-                6
+                3
             );
         }
 
@@ -196,7 +207,7 @@ class RuleEngine
                 $missing / $total > 0.5 ? 'warning' : 'info',
                 'Images are missing alt text',
                 "{$missing} of {$total} images on the home page have no alt attribute.",
-                'Describe each image in a sentence a screen reader user would understand. Alt text also helps image search traffic.',
+                'Add concise alt text to meaningful images so assistive technologies can describe them; use empty alt text for decorative images.',
                 ['missing' => $missing, 'total' => $total]
             );
         }
@@ -216,15 +227,25 @@ class RuleEngine
             return $findings;
         }
 
-        if (! $snapshot->adsTxt) {
+        if ($snapshot->adsTxtMissing) {
             $findings[] = $this->finding(
                 'policy',
-                'warning',
-                'ads.txt is missing',
-                'No ads.txt file was served at /ads.txt. Ad networks use this file to list who is allowed to sell your inventory, and its absence is a trust signal against you.',
-                'Create an ads.txt file listing the ad networks you work with, for example Google, Media.net and your direct sponsors.',
+                'info',
+                'No ads.txt file found at the checked location',
+                'The standard /ads.txt URL returned not found. This file is used to declare authorized sellers when you participate in advertising programs; its absence alone does not establish an AdSense approval issue.',
+                'If a network asks you to publish ads.txt, use its exact account-specific entry and verify that the file is served from your domain root.',
                 [],
-                8
+                0
+            );
+        } elseif (! $snapshot->adsTxt && ! $snapshot->adsTxtChecked) {
+            $findings[] = $this->finding(
+                'policy',
+                'info',
+                'ads.txt could not be checked',
+                'The crawl could not confirm whether /ads.txt is present. The request may have been unavailable or the response-size budget may have been reached.',
+                'Check the file directly at your domain root if your advertising partners require it.',
+                [],
+                0
             );
         }
 
@@ -242,12 +263,12 @@ class RuleEngine
         } elseif ($copyright < (int) date('Y')) {
             $findings[] = $this->finding(
                 'policy',
-                'warning',
-                'Copyright notice is out of date',
-                "The copyright line says {$copyright} while the current year is ".date('Y').'.',
-                'Update the year in your footer. It is a small detail but reviewers do notice it.',
+                'info',
+                'Copyright year may be outdated',
+                "The detected copyright line says {$copyright}; the current year is ".date('Y').'. The crawl cannot determine whether the year range is intentional.',
+                'Review the footer and update it if the date range no longer reflects your content.',
                 ['year' => $copyright],
-                4
+                0
             );
         } else {
             $findings[] = $this->finding(
@@ -265,24 +286,24 @@ class RuleEngine
         if ($unsafe !== []) {
             $findings[] = $this->finding(
                 'policy',
-                'critical',
-                'Links to unsafe downloads',
-                'The site links to files that reviewers treat as unsafe content: '.implode(', ', array_slice($unsafe, 0, 5)).'.',
-                'Remove any download, crack, torrent or installer links until you can hold a proper licence for the files.',
+                'info',
+                'Download links found for manual review',
+                'The sampled page links to files with these extensions: '.implode(', ', array_slice($unsafe, 0, 5)).'. The file type alone does not show whether a download is unsafe or violates policy.',
+                'Check the destination, safety, licensing and context of each file. Remove or clearly label any link that is inappropriate for your audience.',
                 ['links' => array_slice($unsafe, 0, 10)],
-                20
+                0
             );
         }
 
         if ($this->hasAutoRedirect($home)) {
             $findings[] = $this->finding(
                 'policy',
-                'critical',
-                'The page redirects visitors automatically',
-                'A meta refresh or automatic script redirect was detected. Automatic redirects are one of the clearest signs of a deceptive site.',
-                'Remove the automatic redirect and let visitors stay on the page they asked for.',
+                'info',
+                'Automatic navigation code found',
+                'The page contains a meta refresh or script that can change location. The crawl cannot tell whether it runs automatically or only after a visitor action.',
+                'Check the page in a browser and confirm that navigation occurs only when expected and clearly explained.',
                 [],
-                18
+                0
             );
         }
 
@@ -291,12 +312,12 @@ class RuleEngine
         if ($adScripts >= 6) {
             $findings[] = $this->finding(
                 'policy',
-                'warning',
-                'A lot of advertising scripts on one page',
-                "{$adScripts} advertising or analytics scripts load on the home page. Reviewers see dense ad placement as a low value experience.",
-                'Reduce ad units per screen, keep the placement clear and leave breathing room around the content.',
+                'info',
+                'Several advertising-related script references found',
+                "The home page markup contains {$adScripts} references to advertising-related scripts. This does not show how many ads are rendered or whether the layout is crowded.",
+                'Review the live page for ad density, layout shifts and interference with reading; this script count alone is not a policy finding.',
                 ['ad_scripts' => $adScripts],
-                7
+                0
             );
         }
 
@@ -305,12 +326,12 @@ class RuleEngine
         if ($hiddenText) {
             $findings[] = $this->finding(
                 'policy',
-                'critical',
-                'Hidden text detected',
-                'Keywords appear in text that is styled to be invisible to visitors. Hidden text is treated as manipulation.',
-                'Delete the hidden block. Use visible copy instead.',
+                'info',
+                'Potentially visually hidden text styling found',
+                'A style or class associated with visually hidden text was found. This can be intentional for accessible labels and is not evidence of keyword manipulation by itself.',
+                'Inspect the specific element in a browser and confirm the hidden content is useful, appropriate and not keyword stuffing.',
                 [],
-                16
+                0
             );
         }
 
@@ -320,11 +341,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'policy',
                 'info',
-                'The topic sits close to a policy sensitive area',
-                'The site mentions: '.implode(', ', array_slice($sensitive, 0, 4)).'. These topics are monetised, but they attract far closer review.',
-                'Keep the site away from claims about earnings, cures and guaranteed outcomes, and document any affiliations clearly.',
+                'Policy-related terms found for context review',
+                'The keyword scan found: '.implode(', ', array_slice($sensitive, 0, 4)).'. A term match alone does not establish restricted content or a policy violation.',
+                'Review the surrounding content against the current policies of each network you plan to use, and make any required disclosures.',
                 ['topics' => $sensitive],
-                5
+                0
             );
         }
 
@@ -345,34 +366,34 @@ class RuleEngine
 
         $links = $this->linkPaths($home);
 
-        $required = [
+        $publisherLinks = [
             'About page' => ['about', 'about-us', 'who-we-are', 'our-story', 'aboutus'],
             'Contact page' => ['contact', 'contact-us', 'get-in-touch', 'support'],
             'Privacy policy' => ['privacy', 'privacy-policy', 'privacy-notice', 'gdpr'],
             'Disclaimer' => ['disclaimer', 'terms', 'terms-of-use', 'terms-and-conditions', 'legal'],
         ];
 
-        foreach ($required as $label => $needles) {
+        foreach ($publisherLinks as $label => $needles) {
             $found = $this->hasLinkMatching($links, $needles);
 
             if (! $found) {
-                $severity = $label === 'Privacy policy' ? 'critical' : 'warning';
+                $severity = $label === 'Privacy policy' ? 'warning' : 'info';
 
                 $findings[] = $this->finding(
                     'trust',
                     $severity,
-                    "{$label} is missing",
-                    "No {$label} was linked from the pages we crawled. Trust and safety checks look for these pages before they look at your articles.",
-                    "Add a {$label} page, link it in the footer and make it specific to your site rather than a generic template.",
+                    "No {$label} link detected",
+                    "The crawl did not find a link matching the expected {$label} paths on the home page. The page may exist under another URL or be linked elsewhere.",
+                    "Check that your {$label} is publicly accessible and linked where visitors can find it. Review whether the content is appropriate and current for your site.",
                     [],
-                    $severity === 'critical' ? 14 : 9
+                    $severity === 'warning' ? 5 : 0
                 );
             } else {
                 $findings[] = $this->finding(
                     'trust',
                     'pass',
                     "{$label} is in place",
-                    "A {$label} was found and linked from the site.",
+                    "A home-page link with a matching {$label} path was found. The crawl did not verify the destination page's full content or legal adequacy.",
                     null,
                     ['path' => $found]
                 );
@@ -385,12 +406,12 @@ class RuleEngine
         if (! $hasAuthor && ! $hasSchemaPerson) {
             $findings[] = $this->finding(
                 'trust',
-                'warning',
-                'No visible author or expert identity',
-                'Nothing on the pages we crawled identifies who writes the content. Reviewers look for experience and expertise signals, and an anonymous site is harder to trust.',
-                'Add an author box on every article with a photo, a short biography and a link to a page about the author.',
+                'info',
+                'No clear author signal found in the sample',
+                'The crawler did not detect a byline, author term or Person schema in sampled pages. This does not prove that authorship information is absent from the site.',
+                'Where useful, identify authors and explain relevant experience so readers can assess the source.',
                 [],
-                11
+                0
             );
         } else {
             $findings[] = $this->finding(
@@ -398,8 +419,8 @@ class RuleEngine
                 'pass',
                 'Authorship is visible',
                 $hasAuthor
-                    ? 'Article pages name an author or show a byline.'
-                    : 'Structured data identifies the author of the content.',
+                    ? 'An author-related word or byline signal was detected in sampled text; confirm it identifies a real author.'
+                    : 'Person structured data was detected; confirm it refers to the relevant author.',
                 null,
                 []
             );
@@ -411,11 +432,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'trust',
                 'info',
-                'No social profiles linked',
-                'Visitors get no way to follow the site outside your own pages.',
-                'Link your social profiles in the footer. It helps reviewers verify that a real person is behind the site.',
+                'No social profile links found on the home page',
+                'No recognised social-profile link was detected in the home-page sample. This does not affect whether your content is useful or establish a network requirement.',
+                'Add social links only if they are active and useful to your readers.',
                 [],
-                3
+                0
             );
         }
 
@@ -425,11 +446,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'trust',
                 'warning',
-                'No visible contact details',
-                'Visitors cannot find a phone number, address or business name anywhere on the home page.',
-                'Show a working email address, and add a contact page with a form that actually reaches you.',
+                'No contact method detected on the home page',
+                'The crawl did not find an email address, phone number or link with a contact-related path in the home-page sample. Contact details may be present elsewhere.',
+                'If visitors need to reach you, provide a working contact method and verify that it is publicly accessible.',
                 [],
-                8
+                4
             );
         }
 
@@ -439,11 +460,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'trust',
                 'info',
-                'No organisation structured data',
-                'The site does not describe itself with organisation structured data, so search engines cannot confirm who publishes it.',
-                'Add Organization or Person JSON-LD with your name, logo, contact details and social profiles.',
+                'Organisation structured data not detected',
+                'The crawl did not find Organization or LocalBusiness JSON-LD in sampled pages. This optional markup is not a substitute for clear publisher information.',
+                'If relevant, add accurate Organization or Person structured data and validate it with a structured-data testing tool.',
                 [],
-                3
+                0
             );
         }
 
@@ -462,15 +483,35 @@ class RuleEngine
             return $findings;
         }
 
-        if (! $snapshot->robots) {
+        if ($snapshot->robotsMissing) {
             $findings[] = $this->finding(
                 'seo',
-                'warning',
-                'robots.txt is missing',
-                'No robots.txt file was found. Reviewers also check that you are not hiding anything from crawlers.',
-                'Publish a robots.txt that allows search engines and blocks nothing important.',
+                'info',
+                'robots.txt not found at the checked location',
+                'The standard /robots.txt URL returned not found. Many sites do not need custom rules; this alone is not an indexing or approval issue.',
+                'If you publish robots.txt, check that its rules do not unintentionally block pages or resources you want crawled.',
                 [],
-                8
+                0
+            );
+        } elseif (! $snapshot->robots && ! $snapshot->robotsChecked) {
+            $findings[] = $this->finding(
+                'seo',
+                'info',
+                'robots.txt could not be checked',
+                'The crawl could not confirm whether /robots.txt is present. The request may have been unavailable or the response-size budget may have been reached.',
+                'Check the file directly at your domain root if you rely on custom crawl rules.',
+                [],
+                0
+            );
+        } elseif ($snapshot->robots?->truncated) {
+            $findings[] = $this->finding(
+                'seo',
+                'info',
+                'robots.txt response was size-limited',
+                'Only the beginning of robots.txt was inspected, so rules later in the file may not have been considered.',
+                'Review the complete file directly before changing crawler access rules.',
+                [],
+                0
             );
         } else {
             $robots = strtolower($snapshot->robots->body);
@@ -480,51 +521,61 @@ class RuleEngine
             if ($blocksAds) {
                 $findings[] = $this->finding(
                     'seo',
-                    'critical',
-                    'robots.txt blocks the advertising crawlers',
-                    'Google AdsBot or Media Partners Google is disallowed in robots.txt, so the ad review system cannot read your pages.',
-                    'Allow Google AdsBot and Media Partners Google. Block them only for sections that truly must stay private.',
+                    'warning',
+                    'robots.txt may block an advertising crawler',
+                    'A simple text check found a broad Disallow rule under an advertising crawler user-agent. The crawler does not fully emulate robots.txt group precedence or the partner review process.',
+                    'Review the complete robots.txt rules and confirm the intended public pages are crawlable before changing access rules.',
                     [],
-                    20
+                    6
                 );
             } else {
                 $findings[] = $this->finding(
                     'seo',
                     'pass',
-                    'robots.txt is published and does not block ad crawlers',
-                    'A robots.txt file was found and the advertising crawlers are allowed.',
+                    'No broad advertising-crawler block detected',
+                    'The basic text check did not find a broad Disallow rule for the named advertising crawlers. This is not a full robots.txt validation.',
                     null,
                     []
                 );
             }
         }
 
-        if (! $snapshot->sitemap) {
+        if ($snapshot->sitemapMissing) {
             $findings[] = $this->finding(
                 'seo',
-                'warning',
-                'No XML sitemap',
-                'The site does not serve a sitemap.xml, so you are relying on search engines to find every page on their own.',
-                'Generate a sitemap that lists your posts and main pages, reference it in robots.txt and submit it in Google Search Console.',
+                'info',
+                'Sitemap not found at the checked location',
+                'The standard /sitemap.xml URL returned not found. A sitemap can be published elsewhere, and this finding does not prove that pages cannot be discovered.',
+                'If the site has many important URLs, publish a current sitemap and reference its location in robots.txt or your search-console account.',
                 [],
-                9
+                0
+            );
+        } elseif (! $snapshot->sitemap && ! $snapshot->sitemapChecked) {
+            $findings[] = $this->finding(
+                'seo',
+                'info',
+                'Sitemap could not be checked',
+                'The crawl could not confirm whether a sitemap is present at the standard location. It may be unavailable or the response-size budget may have been reached.',
+                'Check the sitemap directly and confirm its location in robots.txt or your search-console account.',
+                [],
+                0
             );
         } elseif (! $snapshot->sitemapParsed) {
             $findings[] = $this->finding(
                 'seo',
-                'warning',
-                'The sitemap could not be read',
-                'A sitemap file was served but no page list was found inside it, so it may be broken or empty.',
-                'Regenerate the sitemap and check that it contains loc entries for your real pages.',
+                'info',
+                'Sitemap could not be parsed by this crawler',
+                'A sitemap response was received but no page URLs were extracted. The format may be unsupported, or the response may be incomplete.',
+                'Inspect the sitemap in a dedicated validator and confirm it contains canonical public URLs.',
                 [],
-                7
+                0
             );
         } else {
             $findings[] = $this->finding(
                 'seo',
                 'pass',
-                'A working XML sitemap is published',
-                count($snapshot->sitemapUrls).' URLs are listed in your sitemap.',
+                'Sitemap entries detected at the checked location',
+                'At least '.count($snapshot->sitemapUrls).' URL entries were extracted from the bounded /sitemap.xml response using a lightweight text check; this is not a full sitemap validator or total URL count.',
                 null,
                 ['urls' => count($snapshot->sitemapUrls)]
             );
@@ -533,12 +584,12 @@ class RuleEngine
         if (blank($home->canonical)) {
             $findings[] = $this->finding(
                 'seo',
-                'warning',
-                'No canonical tag on the home page',
-                'Without a canonical tag a site with several URL variants can be seen as duplicate content.',
-                'Add a self referencing canonical tag to every page, and keep one address per article.',
+                'info',
+                'Canonical link not detected on the home page',
+                'No canonical link element was found in the home-page markup. Canonical tags are useful in some setups but are not required on every site.',
+                'If your site has duplicate URL variants, review canonical configuration for affected pages.',
                 [],
-                6
+                0
             );
         }
 
@@ -548,22 +599,22 @@ class RuleEngine
         if ($descriptionLength === 0) {
             $findings[] = $this->finding(
                 'seo',
-                'warning',
-                'Meta description is missing',
-                'The home page has no meta description, so search engines write their own snippet.',
-                'Write a 140 to 160 character description that says what the site covers and who it helps.',
+                'info',
+                'Meta description not detected on the home page',
+                'The home-page markup has no meta description. Search engines may choose page text for a snippet, and they are not required to use the meta description.',
+                'If useful, add a concise, accurate description of the page rather than targeting a fixed character count.',
                 [],
-                5
+                0
             );
         } elseif ($descriptionLength < 70 || $descriptionLength > 170) {
             $findings[] = $this->finding(
                 'seo',
                 'info',
-                'Meta description length is off',
-                "The meta description is {$descriptionLength} characters. The comfortable range is 140 to 160 characters.",
-                'Rewrite the description so it fits the range and still sells the click.',
+                'Meta description length note',
+                "The meta description is {$descriptionLength} characters. Displayed snippets vary by query and device; this product check does not define an ideal or required length.",
+                'Keep the description accurate, useful and concise; search engines may rewrite it.',
                 ['length' => $descriptionLength],
-                3
+                0
             );
         }
 
@@ -573,44 +624,44 @@ class RuleEngine
         if ($titleLength === 0) {
             $findings[] = $this->finding(
                 'seo',
-                'critical',
-                'The home page has no title',
-                'A page without a title cannot be indexed properly and looks broken to a reviewer.',
-                'Add a descriptive title of roughly 50 to 60 characters.',
+                'warning',
+                'Title element not detected on the home page',
+                'The home-page markup has no document title. A clear title helps users, browsers and search results identify the page, but this crawl cannot determine its broader indexing status.',
+                'Add a descriptive title that accurately names the page; there is no fixed character-count requirement.',
                 [],
-                12
+                5
             );
         } elseif ($titleLength > 70) {
             $findings[] = $this->finding(
                 'seo',
                 'info',
-                'Title tag is long',
-                "The title is {$titleLength} characters, so search engines will cut it off.",
-                'Shorten the title to about 55 characters and move the extra words into the description.',
+                'Long title may be truncated in some displays',
+                "The title is {$titleLength} characters. Search-result display length varies, so this is a presentation heuristic rather than a strict limit.",
+                'Keep the most useful description near the start and remove repetition if the title is hard to scan.',
                 ['length' => $titleLength],
-                2
+                0
             );
         }
 
         if ($home->headingCount(1) === 0) {
             $findings[] = $this->finding(
                 'seo',
-                'warning',
-                'No H1 heading on the home page',
-                'The page has no H1, which leaves the topic of the page undeclared.',
-                'Use exactly one H1 that names the topic of the page.',
+                'info',
+                'No H1 heading detected on the home page',
+                'No H1 element was found in the sampled markup. Heading structure is a usability and document-structure signal, not an approval or ranking guarantee.',
+                'Use headings that clearly describe the page and preserve a logical hierarchy; a rigid one-H1 rule is not required.',
                 [],
-                5
+                0
             );
         } elseif ($home->headingCount(1) > 1) {
             $findings[] = $this->finding(
                 'seo',
                 'info',
-                'Several H1 headings on one page',
-                'The page uses more than one H1, which splits the topic signal.',
-                'Keep one H1 and demote the rest to H2.',
+                'Multiple H1 headings detected',
+                'The page contains multiple H1 elements. This is a structural observation, not by itself an indexing or approval problem.',
+                'Check that the heading hierarchy is clear and meaningful for readers and assistive technology.',
                 ['count' => $home->headingCount(1)],
-                2
+                0
             );
         }
 
@@ -630,11 +681,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'seo',
                 'info',
-                'No structured data',
-                'The site does not use JSON-LD, so it cannot show article, breadcrumb or author information in search results.',
-                'Add Article, BreadcrumbList and Person structured data to your posts.',
+                'No JSON-LD detected in sampled pages',
+                'This crawl did not find JSON-LD blocks. Structured data is optional and can make pages eligible for some search-result features, but it does not guarantee display or indexing.',
+                'If relevant, add accurate structured data that matches visible page content and validate it with a structured-data testing tool.',
                 [],
-                3
+                0
             );
         }
 
@@ -643,12 +694,12 @@ class RuleEngine
         if ($broken !== []) {
             $findings[] = $this->finding(
                 'seo',
-                'critical',
-                'Broken internal links',
-                'These pages returned an error: '.implode(', ', array_slice($broken, 0, 6)).'.',
-                'Fix or remove the broken links. A site full of dead ends reads as abandoned.',
+                'warning',
+                'Some crawled page URLs returned errors',
+                'The crawler received HTTP errors for: '.implode(', ', array_slice($broken, 0, 6)).'. Temporary server issues, access rules or crawler blocking can cause false positives.',
+                'Open these URLs in a browser and review the response before correcting internal links or page configuration.',
                 ['links' => $broken],
-                15
+                5
             );
         }
 
@@ -670,12 +721,12 @@ class RuleEngine
         if (! $snapshot->https) {
             $findings[] = $this->finding(
                 'technical',
-                'critical',
-                'The site is not served over HTTPS',
-                'Browsers mark the site as not secure and advertising networks will not serve ads to it.',
-                'Install a free certificate, force HTTPS and redirect every HTTP address to the secure one.',
+                'warning',
+                'The audited URL did not use HTTPS',
+                'The requested page was reached without HTTPS. Secure transport protects visitors and is a good modern default; this crawl cannot determine a network decision.',
+                'Configure a valid TLS certificate and redirect the public site to HTTPS if the site supports it.',
                 [],
-                20
+                8
             );
         } else {
             $findings[] = $this->finding(
@@ -691,19 +742,19 @@ class RuleEngine
         if (blank($home->viewport)) {
             $findings[] = $this->finding(
                 'technical',
-                'critical',
-                'No mobile viewport is declared',
-                'The page does not tell mobile browsers how wide the screen is, so the layout is scaled down and looks broken on a phone.',
-                'Add the viewport meta tag with width=device-width and an initial scale of one.',
+                'warning',
+                'No mobile viewport declaration detected',
+                'The home-page markup does not include a viewport declaration. This can affect mobile rendering, though a browser check is needed to assess the actual layout.',
+                'Add an appropriate viewport meta tag and test the page on common phone and tablet sizes.',
                 [],
-                16
+                6
             );
         } else {
             $findings[] = $this->finding(
                 'technical',
                 'pass',
                 'Mobile viewport is configured',
-                'The page declares a mobile viewport, so it scales correctly on phones.',
+                'A mobile viewport declaration was found. It does not guarantee that the full layout works well on phones.',
                 null,
                 []
             );
@@ -716,10 +767,10 @@ class RuleEngine
                 'technical',
                 'warning',
                 'The home page is heavy',
-                sprintf('The home page weighs %s KB, which is slow on mobile data.', number_format($weight / 1024)),
+                sprintf("The sampled home-page response was %s KB, above the product's 2 MB review heuristic. Load time depends on network, caching and asset delivery.", number_format($weight / 1024)),
                 'Compress your images, serve modern formats, and load scripts only where they are needed.',
                 ['bytes' => $weight],
-                8
+                5
             );
         }
 
@@ -727,23 +778,23 @@ class RuleEngine
             $findings[] = $this->finding(
                 'technical',
                 'warning',
-                'The site responds slowly',
-                "The home page took ".number_format($snapshot->responseTimeMs / 1000, 1).' seconds to answer.',
-                'Turn on page caching, use a fast host near your audience and trim the plugins or scripts that run on every request.',
+                'Slow response observed during this crawl',
+                'The home page took '.number_format($snapshot->responseTimeMs / 1000, 1).' seconds to respond in this request. Results vary with network conditions, caching and server load.',
+                'Repeat the measurement from your target regions and review hosting, caching and heavy server-side work if the delay is consistent.',
                 ['duration_ms' => $snapshot->responseTimeMs],
-                8
+                5
             );
         }
 
         if ($snapshot->homeBytes > 0 && $home->textToHtmlRatio() < 0.08 && $home->wordCount < 500) {
             $findings[] = $this->finding(
                 'technical',
-                'warning',
-                'Most of the page is markup, not content',
-                'The page is mostly code and very little readable text, which usually means heavy widgets, sliders or template leftovers.',
-                'Remove unused widgets, sidebars and decorative scripts so the content is the page.',
+                'info',
+                'Low text-to-markup ratio in the home-page sample',
+                'The visible-text-to-HTML ratio is low and the page contains fewer than 500 visible words. Image-heavy, tool or application pages may be intentional; this heuristic does not measure value.',
+                'Review the page in a browser and make sure users can understand its purpose and find the information they need.',
                 [],
-                7
+                0
             );
         }
 
@@ -751,11 +802,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'technical',
                 'info',
-                'No favicon is declared',
-                'The site does not declare an icon, so browsers show a default placeholder.',
-                'Add a small square favicon and reference it in the page head.',
+                'No favicon link was detected',
+                'The page markup did not declare a favicon. Browsers can also discover default icon paths without a link element.',
+                'Add a favicon if you want consistent browser-tab and bookmark branding.',
                 [],
-                1
+                0
             );
         }
 
@@ -765,6 +816,50 @@ class RuleEngine
     /**
      * @return array<int,array<string,mixed>>
      */
+    private function crawlLimitChecks(SiteSnapshot $snapshot): array
+    {
+        $truncatedPages = array_values(array_filter($snapshot->pages, fn (PageSnapshot $page) => $page->truncated));
+        $limitReached = $snapshot->pageLimitReached || $snapshot->byteBudgetExhausted || $snapshot->timeBudgetExhausted || $truncatedPages !== [] || $snapshot->truncatedResources !== [];
+
+        if (! $limitReached) {
+            return [];
+        }
+
+        $reasons = [];
+
+        if ($snapshot->pageLimitReached) {
+            $reasons[] = 'the page-count limit was reached';
+        }
+
+        if ($snapshot->byteBudgetExhausted) {
+            $reasons[] = 'the total response-size budget was reached';
+        }
+
+        if ($snapshot->timeBudgetExhausted) {
+            $reasons[] = 'the total crawl-time budget was reached';
+        }
+
+        if ($truncatedPages !== [] || $snapshot->truncatedResources !== []) {
+            $reasons[] = 'one or more responses were read only up to their size limit';
+        }
+
+        return [$this->finding(
+            'technical',
+            'info',
+            'Crawl coverage was limited',
+            'The crawl was bounded for safety: '.implode('; ', $reasons).'. Some site evidence may therefore be incomplete or not assessed.',
+            'If an important page or site file was not included, review it directly and rerun the audit after confirming it is publicly accessible.',
+            [
+                'pages_truncated' => count($truncatedPages),
+                'resources_truncated' => count(array_unique($snapshot->truncatedResources)),
+                'page_limit_reached' => $snapshot->pageLimitReached,
+                'byte_budget_exhausted' => $snapshot->byteBudgetExhausted,
+                'time_budget_exhausted' => $snapshot->timeBudgetExhausted,
+            ],
+            0
+        )];
+    }
+
     private function trafficChecks(SiteSnapshot $snapshot): array
     {
         $findings = [];
@@ -776,38 +871,29 @@ class RuleEngine
 
         $analytics = $this->detectAnalytics($home);
 
-        if ($analytics === []) {
-            $findings[] = $this->finding(
-                'traffic',
-                'warning',
-                'No analytics or search console script found',
-                'There is no sign of an analytics property on the pages we crawled. Ad networks like to see that a publisher measures their own traffic.',
-                'Install Google Analytics or a privacy friendly alternative, and connect Google Search Console.',
-                [],
-                7
-            );
-        } else {
-            $findings[] = $this->finding(
-                'traffic',
-                'pass',
-                'Analytics is installed',
-                'Found: '.implode(', ', $analytics).'.',
-                null,
-                ['providers' => $analytics]
-            );
-        }
+        $findings[] = $this->finding(
+            'traffic',
+            'info',
+            $analytics === [] ? 'Traffic quality was not assessed' : 'Analytics tag detected, traffic quality still not assessed',
+            $analytics === []
+                ? 'A public crawl cannot see analytics dashboards, sessions, referrals, bots, engagement or click-through rates. No analytics tag was visible on the sampled pages.'
+                : 'Found: '.implode(', ', $analytics).'. A tag only proves that code is present; it does not verify traffic sources, sessions, bots, engagement or click-through rates.',
+            'Use your own analytics and search console reports to review traffic quality. Do not treat the presence or absence of a tracking script as evidence of approval readiness.',
+            ['providers' => $analytics],
+            0
+        );
 
         $placeholder = $this->detectPlaceholderAnalytics($home);
 
         if ($placeholder !== []) {
             $findings[] = $this->finding(
                 'traffic',
-                'critical',
-                'Analytics is still using a placeholder property',
-                'These identifiers look like unfilled examples: '.implode(', ', $placeholder).'. Traffic measured with an unfilled property shows as not set, and the ad account sees the same.',
+                'info',
+                'Analytics contains a placeholder identifier',
+                'These identifiers look like unfilled examples: '.implode(', ', $placeholder).'. The crawler cannot confirm whether analytics data is collected or how any ad network evaluates it.',
                 'Replace the example IDs with your real measurement ID, then confirm that data arrives in your reports.',
                 ['identifiers' => $placeholder],
-                12
+                0
             );
         }
 
@@ -817,11 +903,11 @@ class RuleEngine
             $findings[] = $this->finding(
                 'traffic',
                 'warning',
-                'Links to known traffic spam sites',
-                'The page links to: '.implode(', ', array_slice($spam, 0, 4)).'. These referrers send junk traffic and hurt your approval chances.',
-                'Remove the links and set up a referrer spam filter in your analytics.',
-                ['referrers' => $spam],
-                6
+                'Potentially low-quality outbound links',
+                'The sampled page links to: '.implode(', ', array_slice($spam, 0, 4)).'. This is an outbound-link signal only; it does not show that these domains sent you traffic.',
+                'Review whether these links are relevant, safe and disclosed. Use your analytics reports to investigate incoming referral traffic separately.',
+                ['outbound_links' => $spam],
+                0
             );
         }
 
@@ -1063,7 +1149,7 @@ class RuleEngine
 
     private function detectAuthorSignals(SiteSnapshot $snapshot): bool
     {
-        foreach ($snapshot->pages as $page) {
+        foreach ($snapshot->contentPages() as $page) {
             $text = Str::lower($page->document->text);
 
             foreach (['by ', 'written by', 'author', 'posted by', 'reviewed by'] as $needle) {
@@ -1088,7 +1174,7 @@ class RuleEngine
 
     private function hasSchemaType(SiteSnapshot $snapshot, string $type): bool
     {
-        foreach ($snapshot->pages as $page) {
+        foreach ($snapshot->contentPages() as $page) {
             foreach ($page->document->jsonLd as $block) {
                 $flat = Str::lower(json_encode($block) ?: '');
 

@@ -12,6 +12,7 @@ use App\Support\Currency;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class BillingController extends Controller
@@ -94,6 +95,10 @@ class BillingController extends Controller
             return redirect()->route('billing.invoice', $invoice)->with('status', 'This invoice is already paid.');
         }
 
+        if (! in_array($invoice->status, ['pending', 'awaiting_review'], true)) {
+            return redirect()->route('billing.invoice', $invoice)->with('error', 'This invoice is not available for payment.');
+        }
+
         $data = $request->validate([
             'gateway' => ['required', 'string', 'max:40'],
             'coupon' => ['nullable', 'string', 'max:40'],
@@ -107,8 +112,8 @@ class BillingController extends Controller
 
         $driver = $gateways->driver($gateway);
 
-        if (! $driver) {
-            return back()->with('error', 'That payment method is not available.');
+        if (! $driver || ! $driver->isConfigured() || $gateway->checkoutCurrency() === null) {
+            return back()->with('error', 'That payment method is not available or configured for USD/BDT checkout.');
         }
 
         $intent = $driver->createPayment($invoice, $request->user());
@@ -122,6 +127,8 @@ class BillingController extends Controller
                 return response()->view('billing.redirect', [
                     'url' => $intent->redirectUrl,
                     'script' => $intent->payload['script'],
+                    'checkoutModal' => (bool) ($intent->payload['checkout_modal'] ?? false),
+                    'fallbackUrl' => route('billing.invoice', $invoice),
                 ]);
             }
 
@@ -165,11 +172,22 @@ class BillingController extends Controller
 
         $verified = $driver->verifyWebhook($request);
 
-        if ($verified === false) {
+        if ($verified !== true) {
             abort(403, 'The signature could not be verified.');
         }
 
-        $invoiceId = (int) ($request->input('invoice_id') ?: data_get($request->json(), 'data.metadata.invoice_id') ?: 0);
+        $payload = $request->json()->all();
+        $invoiceId = (int) (
+            $request->input('invoice_id')
+            ?: data_get($payload, 'data.object.metadata.invoice_id')
+            ?: data_get($payload, 'data.object.client_reference_id')
+            ?: data_get($payload, 'resource.purchase_units.0.custom_id')
+            ?: data_get($payload, 'resource.purchase_units.0.reference_id')
+            ?: data_get($payload, 'resource.custom_id')
+            ?: data_get($payload, 'data.metadata.invoice_id')
+            ?: data_get($payload, 'value1')
+            ?: 0
+        );
         $invoice = $invoiceId > 0 ? Invoice::query()->find($invoiceId) : null;
 
         if ($invoice) {
@@ -209,10 +227,26 @@ class BillingController extends Controller
     {
         abort_unless($invoice->user_id === $request->user()->id, 403);
 
-        $invoice->update([
-            'status' => 'awaiting_review',
-            'meta' => array_merge($invoice->meta ?? [], ['manual_submitted_at' => now()->toIso8601String()]),
-        ]);
+        $submitted = DB::transaction(function () use ($invoice): bool {
+            $locked = Invoice::query()->lockForUpdate()->find($invoice->id);
+
+            if (! $locked || ! in_array($locked->status, ['pending', 'awaiting_review'], true)) {
+                return false;
+            }
+
+            $meta = $locked->meta ?? [];
+            $meta['manual_submitted_at'] = now()->toIso8601String();
+            $locked->update([
+                'status' => 'awaiting_review',
+                'meta' => $meta,
+            ]);
+
+            return true;
+        });
+
+        if (! $submitted) {
+            return back()->with('error', 'This invoice is no longer available for manual payment review.');
+        }
 
         return back()->with('status', 'Thanks. We will confirm the transfer and activate the subscription, usually within a few hours.');
     }

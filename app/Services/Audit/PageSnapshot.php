@@ -11,6 +11,7 @@ class PageSnapshot
         public readonly int $bytes,
         public readonly HtmlDocument $document,
         public readonly string $type = 'page',
+        public readonly bool $truncated = false,
     ) {
     }
 

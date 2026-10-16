@@ -28,7 +28,7 @@
                     <tr>
                         <th>Site</th>
                         <th>Mode</th>
-                        <th>Probability</th>
+                        <th>Readiness</th>
                         <th>Verdict</th>
                         <th>Pages</th>
                         <th>Finished</th>
@@ -40,19 +40,22 @@
                         <tr>
                             <td>
                                 <a href="{{ route('audits.show', $audit) }}" class="font-semibold">{{ $audit->domain }}</a>
+                                @if (data_get($audit->meta, 'sample_data'))
+                                    <span class="badge badge-muted">Example</span>
+                                @endif
                                 <div class="faint text-xs truncate" style="max-width:240px;">{{ $audit->url }}</div>
                             </td>
                             <td class="text-sm muted">{{ ucfirst($audit->mode) }}</td>
                             <td class="num">
                                 @if ($audit->status === 'completed')
-                                    <strong>{{ $audit->probability }}%</strong>
+                                    <strong>{{ $audit->score }}/100</strong>
                                 @else
                                     <span class="faint">--</span>
                                 @endif
                             </td>
                             <td>
                                 @if ($audit->status === 'completed')
-                                    <span class="badge {{ $audit->probability >= 78 ? 'badge-pass' : ($audit->probability >= 55 ? 'badge-warn' : 'badge-fail') }}">{{ $audit->verdictLabel() }}</span>
+                                    <span class="badge {{ $audit->score >= 78 ? 'badge-pass' : ($audit->score >= 55 ? 'badge-warn' : 'badge-fail') }}">{{ $audit->verdictLabel() }}</span>
                                 @elseif ($audit->status === 'failed')
                                     <span class="badge badge-fail">Failed</span>
                                 @else

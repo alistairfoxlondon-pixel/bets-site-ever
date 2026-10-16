@@ -44,7 +44,7 @@ class DashboardController extends Controller
         $ready = Audit::query()
             ->where('user_id', $user->id)
             ->where('status', 'completed')
-            ->orderByDesc('probability')
+            ->orderByDesc('score')
             ->orderByDesc('completed_at')
             ->first();
 

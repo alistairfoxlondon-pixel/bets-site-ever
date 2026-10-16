@@ -43,7 +43,9 @@ class SettingSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            Setting::updateOrCreate(['key' => $setting['key']], $setting);
+            // Seed defaults only. Re-running db:seed must never erase a
+            // production API key, model choice or admin-managed setting.
+            Setting::firstOrCreate(['key' => $setting['key']], $setting);
         }
     }
 }

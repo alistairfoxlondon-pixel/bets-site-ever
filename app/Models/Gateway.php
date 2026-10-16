@@ -69,7 +69,26 @@ class Gateway extends Model
 
     public function isReady(): bool
     {
-        return $this->is_enabled && filled($this->credentials);
+        return $this->is_enabled && filled($this->credentials) && $this->checkoutCurrency() !== null;
+    }
+
+    /**
+     * Return a settlement currency supported by both this product's prices
+     * and the currencies configured for the gateway.
+     */
+    public function checkoutCurrency(): ?string
+    {
+        $currencies = array_map(fn ($currency) => strtoupper((string) $currency), (array) $this->currencies);
+
+        if (in_array('USD', $currencies, true)) {
+            return 'USD';
+        }
+
+        if (in_array('BDT', $currencies, true)) {
+            return 'BDT';
+        }
+
+        return null;
     }
 
     /**
@@ -83,7 +102,6 @@ class Gateway extends Model
             'stripe' => [
                 'secret_key' => 'sk_live_...',
                 'webhook_secret' => 'whsec_...',
-                'base_url' => 'https://api.stripe.com/v1',
             ],
             'paypal' => [
                 'client_id' => 'Client ID',
@@ -113,6 +131,7 @@ class Gateway extends Model
             'razorpay' => [
                 'key_id' => 'Key ID',
                 'key_secret' => 'Key secret',
+                'webhook_secret' => 'Webhook signing secret',
             ],
             'paymob' => [
                 'public_key' => 'Public key',

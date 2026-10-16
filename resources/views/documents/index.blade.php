@@ -19,7 +19,7 @@
                 @include('partials.icons', ['name' => 'pen', 'class' => 'w-5 h-5'])
             </span>
             <h2 class="text-lg mb-2">No articles yet</h2>
-            <p class="muted text-sm mb-5">Give the writer a keyword and it will produce a publish ready piece.</p>
+            <p class="muted text-sm mb-5">Give the writer a brief and review the editable draft before publication.</p>
             <a href="{{ route('documents.create') }}" class="btn btn-primary">Write an article</a>
         </div>
     @else

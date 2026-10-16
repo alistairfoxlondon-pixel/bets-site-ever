@@ -116,7 +116,7 @@
                     @foreach ($audits as $audit)
                         <li class="flex items-center justify-between gap-3">
                             <a href="{{ route('admin.audits.show', $audit) }}" class="truncate">{{ $audit->domain }}</a>
-                            <span class="mono faint">{{ $audit->probability }}%</span>
+                            <span class="mono faint">{{ $audit->score }}/100</span>
                         </li>
                     @endforeach
                 </ul>

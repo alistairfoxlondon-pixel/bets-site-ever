@@ -21,11 +21,14 @@
                     @endif
                     <div @if (($setting['meta']['type'] ?? '') === 'textarea') class="col-span-2" @endif>
                         <label class="label">{{ $setting['meta']['label'] }}</label>
-                        @if (($setting['meta']['type'] ?? '') === 'textarea')
+                        @if (($setting['meta']['type'] ?? '') === 'secret_textarea')
+                            <textarea class="field mono" name="settings[{{ $key }}]" rows="6" style="font-size:.82rem;"
+                                      placeholder="{{ filled($setting['value']) ? 'Stored securely. Leave empty to keep it.' : 'Not set' }}"></textarea>
+                        @elseif (($setting['meta']['type'] ?? '') === 'textarea')
                             <textarea class="field mono" name="settings[{{ $key }}]" rows="6" style="font-size:.82rem;">{{ $setting['value'] }}</textarea>
                         @elseif (($setting['meta']['type'] ?? '') === 'secret')
                             <input class="field mono" name="settings[{{ $key }}]" type="password"
-                                   value="" placeholder="{{ filled($setting['value']) ? 'Stored. Type to replace.' : 'Not set' }}">
+                                   value="" placeholder="{{ filled($setting['value']) ? 'Stored securely. Type to replace.' : 'Not set' }}">
                         @else
                             <input class="field" name="settings[{{ $key }}]"
                                    type="{{ ($setting['meta']['type'] ?? '') === 'number' ? 'number' : 'text' }}"

@@ -12,17 +12,17 @@
             <p class="eyebrow mb-3">Inside the product</p>
             <h1 class="mb-4">Four tools that share one engine</h1>
             <p class="lede">
-                The auditor tells you what is missing, the writer fills the gap, the indexing tool
-                publishes the result and the report proves the progress.
+                The auditor highlights public-site signals, the writer helps draft new content,
+                indexing tools record supported submissions, and reports track changes over time.
             </p>
         </div>
 
         <div class="grid grid-2 mt-9" style="gap:1.25rem;">
             @foreach ([
-                ['icon' => 'shield', 'title' => 'Approval auditor', 'text' => 'Crawls up to 25 pages, checks 120 signals, scores six review areas and produces a realistic probability with a ranked fix list.'],
-                ['icon' => 'pen', 'title' => 'AdSense content writer', 'text' => 'Long form articles with the title, meta description, FAQ block, internal links, external references and image prompts a publisher needs.'],
-                ['icon' => 'link', 'title' => 'Affiliate writer', 'text' => 'The same depth with a clear affiliate disclosure in the first paragraph and tagged monetised links.'],
-                ['icon' => 'search', 'title' => 'Quick indexing', 'text' => 'Push a URL to the Google Indexing API and to Bing through IndexNow, with a full submission history.'],
+                ['icon' => 'shield', 'title' => 'Publisher-site auditor', 'text' => 'Crawls a limited number of public pages, reports evidence-linked findings and calculates a product-defined readiness index. It does not predict approval.'],
+                ['icon' => 'pen', 'title' => 'Informational content writer', 'text' => 'Drafts articles with SEO metadata, FAQs, publisher-supplied internal links, references and image prompts for review.'],
+                ['icon' => 'link', 'title' => 'Affiliate writer', 'text' => 'Creates affiliate-focused drafts with disclosure prompts and publisher-provided monetised links for editorial review.'],
+                ['icon' => 'search', 'title' => 'Indexing requests', 'text' => 'Submit supported URLs to configured Google or Bing services and track the response; submission does not guarantee crawling or indexing.'],
             ] as $tool)
                 <div class="card" style="padding:1.6rem;">
                     <span class="icon-box">
@@ -47,8 +47,8 @@
                 <h2 class="mb-3">Re-audit after every fix</h2>
                 <p class="muted">
                     The point of a second audit is the difference. AdReady keeps every run, and the
-                    comparison view lines up the score, the probability and each category so you
-                    can see exactly what your work changed.
+                    comparison view lines up the readiness index and each assessed category so you
+                    can see how the sampled findings changed between runs.
                 </p>
                 <ul class="mt-5 space-y-3" style="font-size:.95rem;">
                     <li class="flex gap-3">

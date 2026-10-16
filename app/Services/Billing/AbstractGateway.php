@@ -5,6 +5,7 @@ namespace App\Services\Billing;
 use App\Models\Gateway;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\Currency;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -27,16 +28,28 @@ abstract class AbstractGateway implements PaymentGateway
 
     protected function currency(): string
     {
-        return strtoupper((string) ($this->credential('currency') ?: 'USD'));
+        return $this->gateway->checkoutCurrency()
+            ?? throw new \InvalidArgumentException('This payment method has no supported USD or BDT settlement currency configured.');
     }
 
     protected function amountFor(Invoice $invoice): float
     {
-        if ($this->currency() === 'BDT') {
+        $gatewayCurrency = $this->currency();
+        $invoiceCurrency = strtoupper((string) $invoice->currency);
+
+        if ($gatewayCurrency === $invoiceCurrency) {
+            return (float) $invoice->amount;
+        }
+
+        if ($gatewayCurrency === 'BDT' && $invoiceCurrency === 'USD') {
             return (float) $invoice->amount_bdt;
         }
 
-        return (float) $invoice->amount;
+        if ($gatewayCurrency === 'USD' && $invoiceCurrency === 'BDT') {
+            return Currency::fromBdt((float) $invoice->amount);
+        }
+
+        throw new \InvalidArgumentException('The invoice currency cannot be converted to this gateway currency.');
     }
 
     protected function client(): PendingRequest

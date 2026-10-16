@@ -13,6 +13,7 @@ class FetchResult
         public readonly array $headers = [],
         public readonly int $durationMs = 0,
         public readonly int $bytes = 0,
+        public readonly bool $truncated = false,
         public readonly ?string $error = null,
     ) {
     }
@@ -25,6 +26,7 @@ class FetchResult
         array $headers,
         int $durationMs,
         int $bytes,
+        bool $truncated = false,
     ): self {
         return new self(
             successful: true,
@@ -35,12 +37,13 @@ class FetchResult
             headers: $headers,
             durationMs: $durationMs,
             bytes: $bytes,
+            truncated: $truncated,
         );
     }
 
-    public static function failed(string $url, string $error): self
+    public static function failed(string $url, string $error, int $status = 0): self
     {
-        return new self(successful: false, url: $url, error: $error);
+        return new self(successful: false, url: $url, status: $status, error: $error);
     }
 
     public function header(string $name): ?string

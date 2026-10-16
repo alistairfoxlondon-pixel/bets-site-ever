@@ -100,7 +100,11 @@ class UserController extends Controller
             return back()->with('error', 'Enter a non zero amount.');
         }
 
-        $user->grantCredits($amount, $amount > 0 ? 'bonus' : 'adjustment', $data['reason'] ?: 'Manual adjustment by an administrator');
+        try {
+            $user->grantCredits($amount, $amount > 0 ? 'bonus' : 'adjustment', $data['reason'] ?: 'Manual adjustment by an administrator');
+        } catch (\InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
 
         return back()->with('status', 'Credits updated. New balance: '.number_format((float) $user->fresh()->credits_balance, 0).'.');
     }

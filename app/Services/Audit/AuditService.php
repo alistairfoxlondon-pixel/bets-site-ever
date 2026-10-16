@@ -51,13 +51,8 @@ class AuditService
 
             $scored = $this->scoring->score($findings);
 
-            $probability = $scored['probability'];
-
-            if (isset($aiResult['probability']) && $aiResult['probability'] !== null) {
-                $probability = (int) round($probability * 0.55 + (int) $aiResult['probability'] * 0.45);
-            }
-
-            $verdict = $this->verdictFor($probability);
+            $readinessIndex = $scored['readiness_index'];
+            $verdict = $this->verdictFor($readinessIndex);
 
             $audit->findings()->delete();
 
@@ -78,7 +73,7 @@ class AuditService
             $audit->forceFill([
                 'status' => Audit::STATUS_COMPLETED,
                 'score' => $scored['score'],
-                'probability' => $probability,
+                'probability' => $readinessIndex,
                 'verdict' => $verdict,
                 'model' => $aiResult['model'] ?? null,
                 'tokens_used' => (int) ($aiResult['tokens'] ?? 0),
@@ -120,7 +115,7 @@ class AuditService
     }
 
     /**
-     * @return array{findings:array,probability:?int,model:?string,tokens:int,cost:float,analysis:array,roadmap:array,strengths:array,risks:array,critical_fixes:array,summary:?string,error:?string}
+     * @return array{findings:array,model:?string,tokens:int,cost:float,analysis:array,roadmap:array,strengths:array,risks:array,critical_fixes:array,summary:?string,error:?string}
      */
     private function askModel(SiteSnapshot $snapshot, Audit $audit, array $mode, array $networkReadiness): array
     {
@@ -139,7 +134,6 @@ class AuditService
         if (! $response->successful) {
             return [
                 'findings' => [],
-                'probability' => null,
                 'model' => null,
                 'tokens' => 0,
                 'cost' => 0.0,
@@ -173,6 +167,12 @@ class AuditService
                 $severity = 'info';
             }
 
+            // Model-generated findings have no independently verified evidence;
+            // reserve critical severity for deterministic checks.
+            if ($severity === AuditFindingSeverity::CRITICAL) {
+                $severity = AuditFindingSeverity::WARNING;
+            }
+
             $findings[] = [
                 'category' => $category,
                 'severity' => $severity,
@@ -193,20 +193,25 @@ class AuditService
             'seo_indexing' => (string) ($data['seo_indexing'] ?? ''),
         ];
 
+        $publicReadiness = (array) ($data['public_readiness'] ?? $data['approval_readiness'] ?? []);
+        $summary = match (Str::upper(trim((string) ($data['verdict'] ?? '')))) {
+            'STRONG PUBLIC SIGNALS' => 'Strong public signals',
+            'IMPROVEMENTS RECOMMENDED' => 'Improvements recommended',
+            'SIGNIFICANT GAPS' => 'Significant public gaps',
+            default => null,
+        };
+
         return [
             'findings' => $findings,
-            'probability' => isset($data['approval_readiness']['probability'])
-                ? max(0, min(100, (int) $data['approval_readiness']['probability']))
-                : null,
             'model' => $response->model,
             'tokens' => $response->totalTokens,
             'cost' => (float) Setting::get('ai.price_per_million', 0),
             'analysis' => $analysis,
             'roadmap' => array_values((array) ($data['roadmap'] ?? [])),
-            'strengths' => array_values((array) ($data['approval_readiness']['strengths'] ?? [])),
-            'risks' => array_values((array) ($data['approval_readiness']['risks'] ?? [])),
-            'critical_fixes' => array_values((array) ($data['approval_readiness']['critical_fixes'] ?? [])),
-            'summary' => isset($data['verdict']) ? (string) $data['verdict'] : null,
+            'strengths' => array_values((array) ($publicReadiness['strengths'] ?? [])),
+            'risks' => array_values((array) ($publicReadiness['risks'] ?? [])),
+            'critical_fixes' => array_values((array) ($publicReadiness['priority_fixes'] ?? $publicReadiness['critical_fixes'] ?? [])),
+            'summary' => $summary,
             'error' => null,
         ];
     }
@@ -219,10 +224,10 @@ class AuditService
         return $modes[$mode];
     }
 
-    private function verdictFor(int $probability): string
+    private function verdictFor(int $readinessIndex): string
     {
         foreach (config('adready.score.verdicts') as $key => $meta) {
-            if ($probability >= $meta['min']) {
+            if ($readinessIndex >= $meta['min']) {
                 return $key;
             }
         }

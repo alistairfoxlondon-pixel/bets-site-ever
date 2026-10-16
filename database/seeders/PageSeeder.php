@@ -13,19 +13,19 @@ class PageSeeder extends Seeder
             [
                 'slug' => 'about',
                 'title' => 'About AdReady',
-                'meta_title' => 'About AdReady, the ad network approval auditor',
-                'meta_description' => 'AdReady audits websites for Google AdSense, AdX, Ezoic, Mediavine and Raptive approval, and gives publishers a realistic probability plus a fix list.',
+                'meta_title' => 'About AdReady, publisher-site audit tools',
+                'meta_description' => 'Learn how AdReady reviews sampled public-site signals, generates article drafts and tracks supported indexing requests without predicting approval.',
                 'body' => <<<'HTML'
-<p>AdReady was built for one reason: too many publishers apply to Google AdSense with a site that is not ready, get a generic rejection, and have no idea what to change. The rejection email does not tell you that your site has nine posts instead of twenty five, that no article names an author, or that you published a privacy page that the navigation hides three clicks deep.</p>
-<p>We built the auditor to say what a reviewer would say, in a language a publisher can act on. It crawls the public pages of a site, runs a fixed set of policy, trust, indexing and quality checks, and then asks a frontier model to read the same evidence the way a human reviewer would. The two views are blended, and every point in the score traces back to a check you can read in the report.</p>
+<p>AdReady helps publishers review public-site signals and organise practical improvements. The audit service samples pages and files that a crawler can access, then presents deterministic checks, model-assisted observations and a product-defined readiness index.</p>
+<p>The index is an internal heuristic, not a calibrated probability, official network checklist or prediction of approval. A public crawl cannot verify analytics dashboards, traffic quality, revenue, ownership, account history or a partner's current eligibility terms. Check current requirements directly with each network and use your own analytics for private data.</p>
 <h2>What we believe</h2>
 <ul>
-<li><strong>Honest numbers beat optimistic numbers.</strong> A site that is not ready should be told it is not ready. A score that always flatters nobody is worthless.</li>
-<li><strong>Every finding carries evidence.</strong> If the auditor says your site is thin, it shows you the pages it measured and the number it used.</li>
-<li><strong>Tools should work together.</strong> The report tells you the site needs more substantial articles. The writer produces them. The indexing tool publishes them. The next audit proves the difference.</li>
+<li><strong>Evidence before certainty.</strong> Reports distinguish observed signals from assumptions and explain the limits of a sampled crawl.</li>
+<li><strong>Useful drafts, not guarantees.</strong> The writing tools create editable content for a publisher to fact-check, source and review before publication.</li>
+<li><strong>Submission is not indexing.</strong> Supported indexing requests can be tracked, but search engines decide whether and when to crawl or index a page.</li>
 </ul>
 <h2>Who it is for</h2>
-<p>Independent bloggers who want AdSense. Small publishers moving to Ezoic, Mediavine or Raptive. Agencies who need a repeatable audit for a client site. Anyone who has been rejected once and does not want to guess again.</p>
+<p>Independent publishers, bloggers and agencies who want a structured review of public site signals, a record of changes over time and tools to prepare content for human review.</p>
 <h2>Contact</h2>
 <p>Questions, corrections and partnership enquiries are welcome. Use the contact form and pick a reason so the right person answers it.</p>
 HTML,
@@ -38,9 +38,9 @@ HTML,
                 'body' => <<<'HTML'
 <p>These terms govern your use of AdReady. By creating an account you accept them. If you do not accept them, do not use the service.</p>
 <h2>1. The service</h2>
-<p>AdReady audits websites you nominate, produces readiness reports, writes articles and submits URLs to search engines on your behalf. The report is an assessment based on publicly available information and automated checks. It is advice, not a guarantee.</p>
-<h2>2. No approval guarantee</h2>
-<p>We do not control Google AdSense, Google Ad Manager, Ezoic, Mediavine, Raptive or any other ad network, and we cannot promise that a site will be approved, that a score will be accepted, or that a stated probability will be accurate. Approval decisions rest entirely with those networks.</p>
+<p>AdReady audits public websites you nominate, produces heuristic reports, generates editable article drafts and may submit supported URLs to configured indexing services. Reports are based on sampled public information and automated checks. They are not official network reviews, eligibility decisions, traffic assessments or guarantees.</p>
+<h2>2. No approval or indexing guarantee</h2>
+<p>We do not control Google AdSense, Google Ad Manager, Ezoic, Mediavine, Raptive, search engines or other services. We do not predict or guarantee ad-network approval, search visibility, crawling, indexing, traffic, revenue or rankings. The readiness index is a product-defined heuristic and is not an official or calibrated probability. Decisions rest with the relevant network or search engine.</p>
 <h2>3. Accounts</h2>
 <p>You must provide accurate registration information, keep your password secure and use one account. You are responsible for everything done through your account, including anything done by an automated system you enable. Accounts may be suspended for abuse, for attempting to audit networks or private infrastructure, or for a breach of these terms.</p>
 <h2>4. Credits and subscriptions</h2>

@@ -53,8 +53,8 @@ class RazorpayGateway extends AbstractGateway
 
         $orderId = $response->json('id');
 
-        if (blank($orderId)) {
-            return PaymentIntent::failed('Razorpay did not return an order.');
+        if (! $response->successful() || ! is_string($orderId) || ! preg_match('/^order_[A-Za-z0-9]+$/D', $orderId)) {
+            return PaymentIntent::failed('Razorpay did not return a valid checkout order.');
         }
 
         $script = $this->checkoutScript($invoice, $orderId, $user);
@@ -62,7 +62,7 @@ class RazorpayGateway extends AbstractGateway
         return PaymentIntent::redirect(
             route('billing.callback', ['gateway' => $this->slug(), 'invoice' => $invoice->id]),
             $orderId,
-            ['script' => $script]
+            ['script' => $script, 'checkout_modal' => true]
         );
     }
 
@@ -76,13 +76,17 @@ class RazorpayGateway extends AbstractGateway
             'description' => $invoice->description ?: 'Subscription',
             'order_id' => $orderId,
             'prefill' => ['name' => $user->name, 'email' => $user->email],
-            'handler' => [
-                'action' => route('billing.callback', ['gateway' => $this->slug(), 'invoice' => $invoice->id]),
-            ],
+            'callback_url' => route('billing.callback', ['gateway' => $this->slug(), 'invoice' => $invoice->id]),
+            'redirect' => true,
         ];
 
+        $encodedOptions = json_encode(
+            $options,
+            JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR,
+        );
+
         return '<script src="https://checkout.razorpay.com/v1/checkout.js"></script>'
-            ."<script>new Razorpay(".json_encode($options, JSON_UNESCAPED_SLASHES).").open();</script>";
+            .'<script>(function(){var options='.$encodedOptions.';var instance=null;window.adreadyOpenCheckout=function(){if(!instance){instance=new Razorpay(options);}instance.open();};window.adreadyOpenCheckout();})();</script>';
     }
 
     public function handleCallback(Request $request, Invoice $invoice): bool
@@ -91,29 +95,61 @@ class RazorpayGateway extends AbstractGateway
         $razorpayOrderId = (string) $request->input('razorpay_order_id');
         $razorpayPaymentId = (string) $request->input('razorpay_payment_id');
 
-        if (blank($razorpaySignature) || blank($razorpayOrderId)) {
+        if (! preg_match('/^order_[A-Za-z0-9]+$/D', $razorpayOrderId)
+            || ! preg_match('/^pay_[A-Za-z0-9]+$/D', $razorpayPaymentId)
+            || ! preg_match('/^[a-f0-9]{64}$/iD', $razorpaySignature)) {
             return false;
         }
 
-        $expected = hash_hmac('sha256', $razorpayOrderId.'|'.(string) $this->credential('key_secret'), (string) $this->credential('key_secret'));
+        $expected = hash_hmac(
+            'sha256',
+            $razorpayOrderId.'|'.$razorpayPaymentId,
+            (string) $this->credential('key_secret'),
+        );
 
         if (! hash_equals($expected, $razorpaySignature)) {
             return false;
         }
 
-        return $this->markPaid($invoice, $razorpayPaymentId, $request->all());
+        try {
+            $response = $this->client()
+                ->withBasicAuth((string) $this->credential('key_id'), (string) $this->credential('key_secret'))
+                ->get($this->baseUrl().'/payments/'.$razorpayPaymentId);
+        } catch (\Throwable $exception) {
+            $this->logError('verify-payment', $exception);
+
+            return false;
+        }
+
+        if (! $response->successful()) {
+            return false;
+        }
+
+        $data = $response->json();
+        $expectedAmount = (int) round($this->amountFor($invoice) * 100);
+
+        if (data_get($data, 'id') !== $razorpayPaymentId
+            || data_get($data, 'status') !== 'captured'
+            || data_get($data, 'order_id') !== $razorpayOrderId
+            || (int) data_get($data, 'amount', 0) !== $expectedAmount
+            || strtoupper((string) data_get($data, 'currency', '')) !== $this->currency()
+            || (string) data_get($data, 'notes.invoice_id', '') !== (string) $invoice->id) {
+            return false;
+        }
+
+        return $this->markPaid($invoice, $razorpayPaymentId, $data);
     }
 
     public function verifyWebhook(Request $request): ?bool
     {
+        $secret = (string) $this->credential('webhook_secret');
         $signature = (string) $request->header('X-Razorpay-Signature');
-        $body = $request->getContent();
 
-        if (blank($signature)) {
+        if (blank($secret) || blank($signature)) {
             return false;
         }
 
-        $expected = hash_hmac('sha256', $body, (string) $this->credential('key_secret'));
+        $expected = hash_hmac('sha256', $request->getContent(), $secret);
 
         return hash_equals($expected, $signature);
     }

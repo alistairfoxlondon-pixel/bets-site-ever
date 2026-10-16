@@ -273,29 +273,33 @@
 <table class="score-band" cellspacing="0" cellpadding="0" style="margin-top: 14pt;">
     <tr>
         <td style="width: 34%;">
-            <div class="prob-label">Approval probability</div>
-            <div class="prob">{{ $audit->probability ?? 0 }}<span class="prob-suffix">%</span></div>
-            <div class="note mono">Readiness score {{ $audit->score ?? 0 }} / 100</div>
+            <div class="prob-label">Public-site readiness index</div>
+            <div class="prob">{{ $audit->score ?? 0 }}<span class="prob-suffix">/100</span></div>
+            <div class="note">Internal heuristic from sampled public pages; not an approval prediction.</div>
         </td>
         <td style="width: 66%;">
             <div class="prob-label">Verdict</div>
             <div class="verdict">{{ $verdictLabel }}</div>
             <div style="margin-top: 8pt;">
-                @include('reports.partials.gauge', ['value' => $audit->probability ?? 0, 'cells' => 40, 'class' => 'gauge gauge-wide'])
+                @include('reports.partials.gauge', ['value' => $audit->score ?? 0, 'cells' => 40, 'class' => 'gauge gauge-wide'])
             </div>
             <div class="note" style="padding-top: 6pt;">
                 @if ($summary)
                     {{ \Illuminate\Support\Str::limit($summary, 260) }}
                 @else
-                    This score blends a deterministic rule audit of {{ $audit->pages_crawled ?: 0 }} crawled pages with a model review of the same evidence.
+                    The score summarises deterministic checks and model observations from {{ $audit->pages_crawled ?: 0 }} crawled pages. It does not verify network eligibility or traffic.
                 @endif
             </div>
         </td>
     </tr>
 </table>
 
+@if (data_get($audit->meta, 'sample_data'))
+    <p class="intro"><strong>Demonstration report:</strong> all sample values are illustrative and do not represent a real site audit.</p>
+@endif
+
 <h2 class="section">1. Readiness by area</h2>
-<p class="intro">Each area is scored from 0 to 100 and weighted by how heavily Google's reviewers weigh it during the approval review.</p>
+<p class="intro">Scores are internal heuristics based on the pages we could read. Traffic quality is not assessed by a public crawl, and these weights are not Google's official review criteria.</p>
 <table class="cat-table" cellspacing="0" cellpadding="0">
     <thead>
         <tr>
@@ -310,17 +314,21 @@
             <tr class="{{ $loop->index % 2 ? 'alt' : '' }}">
                 <td>{{ $category['label'] }}</td>
                 <td>
-                    @include('reports.partials.gauge', ['value' => $category['score'], 'cells' => 20, 'class' => 'gauge'])
+                    @if ($category['score'] === null)
+                        <span class="muted">Not assessed from public pages</span>
+                    @else
+                        @include('reports.partials.gauge', ['value' => $category['score'], 'cells' => 20, 'class' => 'gauge'])
+                    @endif
                 </td>
-                <td class="num">{{ (int) round($category['score']) }}</td>
+                <td class="num">{{ $category['score'] === null ? '--' : (int) round($category['score']) }}</td>
                 <td class="weight">{{ $category['weight'] }}%</td>
             </tr>
         @endforeach
     </tbody>
 </table>
 
-<h2 class="section">2. Blockers to fix first</h2>
-<p class="intro">These are the findings that will most likely decide the outcome of a first application. Fix them in order and re-run the audit.</p>
+<h2 class="section">2. Highest-priority findings</h2>
+<p class="intro">Product rules flag these items for closer review based on the sampled evidence. They are not confirmed application blockers; check each finding and fix what applies.</p>
 
 @forelse ($critical as $finding)
     <div class="finding">
@@ -335,16 +343,16 @@
     </div>
 @empty
     <div class="callout">
-        <div class="t">No blocking issues</div>
+        <div class="t">No high-priority findings</div>
         <ul>
-            <li>No critical policy or technical blockers were detected on this pass.</li>
+            <li>No findings in the highest severity group were recorded on this pass. This does not guarantee approval.</li>
         </ul>
     </div>
 @endforelse
 
 @if (count($criticalFixes) > 0)
     <div class="callout">
-        <div class="t">Critical fix list</div>
+        <div class="t">Priority fixes suggested by the model</div>
         <ul>
             @foreach ($criticalFixes as $fix)
                 <li>{{ is_array($fix) ? ($fix['title'] ?? $fix['description'] ?? '') : $fix }}</li>
@@ -353,8 +361,8 @@
     </div>
 @endif
 
-<h2 class="section">3. What needs work</h2>
-<p class="intro">Non blocking issues that still cost points with reviewers.</p>
+<h2 class="section">3. Other findings to review</h2>
+<p class="intro">Lower-priority observations from product rules; some may be false positives or context-dependent.</p>
 
 @forelse ($warnings as $finding)
     <div class="finding warn">
@@ -377,7 +385,7 @@
 @endforelse
 
 <h2 class="section">4. What is already working</h2>
-<p class="intro">Keep these areas intact. Reviewers notice when a site changes shape between applications.</p>
+<p class="intro">These checks passed on the sampled pages. Recheck them if the site changes.</p>
 
 @forelse ($passes as $finding)
     <div class="finding pass">
@@ -407,7 +415,8 @@
     @endforeach
 @endif
 
-<h2 class="section">5. Network readiness</h2>
+<h2 class="section">5. Network-specific public signals</h2>
+<p class="intro">These are product-defined public-page checks only. They do not confirm traffic, account status, invitation status, eligibility, or current partner requirements.</p>
 <p class="intro">The same site is judged against a different bar by every network. This is where you stand with each of them today.</p>
 
 @foreach ($networks as $network)
@@ -416,7 +425,7 @@
             <tr>
                 <td class="name">{{ $network['label'] }}</td>
                 <td class="state">
-                    <span class="badge {{ $network['ready'] ? 'pass' : 'warn' }}">{{ $network['ready'] ? 'Ready' : 'Not ready' }}</span>
+                    <span class="badge {{ $network['ready'] ? 'pass' : 'warn' }}">{{ $network['ready'] ? 'No sampled gaps' : 'Review suggested' }}</span>
                     <span style="font-size: 8pt; color: #5b7a94;">&nbsp;&nbsp;{{ $network['score'] }}% of requirements met</span>
                 </td>
             </tr>
@@ -447,7 +456,7 @@
 @endif
 
 <h2 class="section">{{ $sections ? '7' : '6' }}. First attempt roadmap</h2>
-<p class="intro">Follow these steps in order. The order matters because each step removes a reason for a reviewer to reject the site.</p>
+<p class="intro">Use these steps to work through the observed issues. Prioritise items that are accurate and relevant to your site.</p>
 
 @forelse ($roadmap as $index => $step)
     <div class="roadmap-step">
@@ -462,7 +471,7 @@
     <div class="callout">
         <div class="t">Roadmap</div>
         <ul>
-            <li>Clear every blocker listed in section 2, then re-run the audit to generate the detailed roadmap.</li>
+            <li>Review the highest-priority findings in section 2, address the ones that apply, then re-run the audit.</li>
         </ul>
     </div>
 @endforelse

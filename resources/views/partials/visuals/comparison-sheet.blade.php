@@ -1,15 +1,15 @@
 
-<svg viewBox="0 0 460 340" class="w-full h-auto" role="img" aria-label="Comparison of two audit runs">
+<svg viewBox="0 0 460 340" class="w-full h-auto" role="img" aria-label="Illustrative comparison of public-site readiness indices from two sample runs">
     <rect x="10" y="10" width="200" height="310" rx="4" fill="#ffffff" stroke="#e2e0da"/>
     <rect x="250" y="10" width="200" height="310" rx="4" fill="#ffffff" stroke="#c4d4e0"/>
 
-    <text x="30" y="40" font-family="Source Sans 3, sans-serif" font-size="8" font-weight="700" letter-spacing="1.4" fill="#8a939f">BEFORE</text>
-    <text x="270" y="40" font-family="Source Sans 3, sans-serif" font-size="8" font-weight="700" letter-spacing="1.4" fill="#12395a">AFTER 12 FIXES</text>
+    <text x="30" y="40" font-family="Source Sans 3, sans-serif" font-size="8" font-weight="700" letter-spacing="1.4" fill="#8a939f">ILLUSTRATIVE RUN A</text>
+    <text x="270" y="40" font-family="Source Sans 3, sans-serif" font-size="8" font-weight="700" letter-spacing="1.4" fill="#12395a">ILLUSTRATIVE RUN B</text>
 
-    <text x="30" y="88" font-family="Tenor Sans, sans-serif" font-size="42" fill="#8a939f">41<tspan font-size="18" fill="#8a939f">%</tspan></text>
-    <text x="270" y="88" font-family="Tenor Sans, sans-serif" font-size="42" fill="#12395a">64<tspan font-size="18" fill="#5b7a94">%</tspan></text>
-    <text x="30" y="106" font-family="Source Sans 3, sans-serif" font-size="8.5" fill="#8a939f">high risk of rejection</text>
-    <text x="270" y="106" font-family="Source Sans 3, sans-serif" font-size="8.5" fill="#1f6f4a">wait and improve</text>
+    <text x="30" y="88" font-family="Tenor Sans, sans-serif" font-size="42" fill="#8a939f">41<tspan font-size="18" fill="#8a939f">/100</tspan></text>
+    <text x="270" y="88" font-family="Tenor Sans, sans-serif" font-size="42" fill="#12395a">64<tspan font-size="18" fill="#5b7a94">/100</tspan></text>
+    <text x="30" y="106" font-family="Source Sans 3, sans-serif" font-size="8.5" fill="#8a939f">significant public gaps</text>
+    <text x="270" y="106" font-family="Source Sans 3, sans-serif" font-size="8.5" fill="#1f6f4a">improvements recommended</text>
 
     <g font-family="Source Sans 3, sans-serif" font-size="9" fill="#46586a">
         <text x="30" y="140">Content quality</text>
